@@ -33,6 +33,7 @@
     "@tanstack/react-query": "^4.22.4",
     "date-fns": "^2.30.0",
     "lucide-react": "^0.276.0",
+    "mathjs": "^15.0.0",
     "multicast-dns": "^7.2.5",
     "recharts": "^2.2.0",
     "sequelize": "^6.32.1",

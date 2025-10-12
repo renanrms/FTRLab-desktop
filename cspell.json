@@ -1,30 +1,29 @@
 {
-    "version": "0.2",
-    "ignorePaths": [
-        "tsconfig.json",
-        "yarn.lock"
-    ],
-    "dictionaryDefinitions": [],
-    "dictionaries": [],
-    "words": [
-        "Addchart",
-        "electronjs",
-        "ftrlab",
-        "gstatic",
-        "icns",
-        "linux",
-        "mdns",
-        "mmhhss",
-        "nsis",
-        "photogate",
-        "Roboto",
-        "rocketseat",
-        "sequelize",
-        "sqlite",
-        "tailwindcss",
-        "tanstack",
-        "typecheck"
-    ],
-    "ignoreWords": [],
-    "import": []
+  "version": "0.2",
+  "ignorePaths": ["tsconfig.json", "yarn.lock"],
+  "dictionaryDefinitions": [],
+  "dictionaries": [],
+  "words": [
+    "Addchart",
+    "electronjs",
+    "ftrlab",
+    "gstatic",
+    "icns",
+    "kalman",
+    "linux",
+    "mathjs",
+    "mdns",
+    "mmhhss",
+    "nsis",
+    "photogate",
+    "Roboto",
+    "rocketseat",
+    "sequelize",
+    "sqlite",
+    "tailwindcss",
+    "tanstack",
+    "typecheck"
+  ],
+  "ignoreWords": [],
+  "import": []
 }

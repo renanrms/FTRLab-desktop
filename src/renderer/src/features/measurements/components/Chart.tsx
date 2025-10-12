@@ -1,9 +1,12 @@
+import { useEffect, useState } from 'react'
+
 import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined'
 import ExpandRoundedIcon from '@mui/icons-material/ExpandRounded'
 import ScatterPlotRoundedIcon from '@mui/icons-material/ScatterPlotRounded'
 import ShowChartRoundedIcon from '@mui/icons-material/ShowChartRounded'
 import VerticalAlignBottomRoundedIcon from '@mui/icons-material/VerticalAlignBottomRounded'
 import { Button, IconButton } from '@mui/material'
+import { add, identity, inv, multiply, subtract, transpose } from 'mathjs'
 import {
   CartesianGrid,
   Label,
@@ -17,6 +20,7 @@ import {
 import { twMerge } from 'tailwind-merge'
 
 import { Sensor } from '@shared/types/Device'
+import { Measurement } from '@shared/types/Measurement'
 
 import { useChartControls } from '../hooks/useChartControls'
 
@@ -24,13 +28,137 @@ interface ChartProps {
   className?: string
   XAxis: { key: string; name: string }
   YAxis: { key: string; name: string }
-  data: Object[]
+  data: Measurement[]
   sensor: Sensor
   timeRange: number
 }
 
 export function Chart(props: ChartProps) {
   const chartControls = useChartControls()
+
+  // Using a Linear Kalman Filter, assuming constant velocity model...
+
+  const [x, setX] = useState<number[][]>([[props.data?.[0]?.value ?? 0], [0]]) // Initial state (position and velocity)
+
+  const [P, setP] = useState([
+    [1, 0],
+    [0, 1],
+  ]) // Initial Estimate Error Covariance
+
+  const [estimates, setEstimates] = useState<
+    { value: number; timestamp: number }[]
+  >([])
+
+  // const xK = x
+  // const pK = P
+  let estimatesK = estimates
+
+  const F = (dt: number) => [
+    [1, dt],
+    [0, 1],
+  ] // State Transition Matrix
+
+  const Q = (dt: number, processVar: number) =>
+    [
+      [1, 0.5 * dt ** 2],
+      [0, 1],
+    ].map((row) => row.map((val) => val * processVar)) // Process Noise Covariance
+
+  const H = [[1, 0]] // Observation Matrix
+
+  const R = [[1000000000000]] // Measurement Noise Covariance
+
+  function kalmanFilterEstimate(
+    value: number,
+    dt: number,
+    xK: number[][],
+    pK: number[][],
+  ) {
+    // Predict
+    const xPredict = multiply(F(dt), xK) // Predicted state estimate
+    const pPredict = add(
+      multiply(multiply(F(dt), pK), transpose(F(dt))),
+      Q(dt, 0.005),
+    ) // Predicted estimate covariance
+
+    // Correct
+    const K = multiply(
+      multiply(pPredict, transpose(H)),
+      inv(add(multiply(multiply(H, pPredict), transpose(H)), R)),
+    ) // Kalman Gain
+
+    const aux = subtract(identity(2), multiply(K, H)) as number[][]
+    const pEstimate = add(
+      multiply(multiply(aux, pPredict), transpose(aux)),
+      multiply(multiply(K, R), transpose(K)),
+    ) // Updated estimate covariance
+    const xEstimate = add(
+      xPredict,
+      multiply(K, subtract([[value]], multiply(H, xPredict))),
+    ) // Updated state estimate
+
+    console.log({ K, xPredict, pPredict, xEstimate, pEstimate })
+
+    // mathjs may return DenseMatrix objects. Convert to plain arrays so calling
+    // code can safely use xK[0][0] indexing.
+    const xOut =
+      typeof (xEstimate as any)?.valueOf === 'function'
+        ? (xEstimate as any).valueOf()
+        : xEstimate
+    const pOut =
+      typeof (pEstimate as any)?.valueOf === 'function'
+        ? (pEstimate as any).valueOf()
+        : pEstimate
+
+    return { xK: xOut as number[][], pK: pOut as number[][] }
+  }
+
+  const kalmanFilterNewMeasurements = (
+    newMeasurements: Measurement[],
+    estimates: { value: number; timestamp: number }[],
+    x0: number[][],
+    p0: number[][],
+  ) => {
+    let [xK, pK] = [x0, p0]
+    const newEstimates = newMeasurements.map((measurement) => {
+      ;({ xK, pK } = kalmanFilterEstimate(
+        measurement.value,
+        measurement.timestamp -
+          (estimates.length ? estimates[estimates.length - 1].timestamp : -100),
+        xK,
+        pK,
+      ))
+
+      // xK = xEstimate
+      // pK = pEstimate
+
+      console.log('xK after', xK)
+
+      return { value: xK[0][0], timestamp: measurement.timestamp }
+    })
+
+    estimatesK = estimates.concat(newEstimates)
+
+    setX(xK)
+    setP(pK)
+    setEstimates(estimatesK)
+  }
+
+  useEffect(() => {
+    if (props.data.length > estimates.length) {
+      console.log(
+        'New data for Kalman Filter:',
+        props.data.slice(estimates.length),
+      )
+      console.log('Current estimates:', estimates)
+      kalmanFilterNewMeasurements(
+        props.data.slice(estimates.length),
+        estimates,
+        x,
+        P,
+      )
+    }
+  })
 
   return (
     <div
@@ -178,6 +306,20 @@ export function Chart(props: ChartProps) {
             strokeDasharray={chartControls.showLines ? undefined : '0 5'}
             stroke="var(--md-ref-palette-primary50)"
             fill="var(--md-ref-palette-primary70)"
+            isAnimationActive={false}
+          />
+          <Line
+            type="monotone"
+            dataKey={props.YAxis.key}
+            data={estimates}
+            name={props.YAxis.name}
+            dot={chartControls.showPoints}
+            strokeWidth={2}
+            strokeDasharray={chartControls.showLines ? undefined : '0 5'}
+            stroke="var(--md-ref-palette-error50)"
+            fill="var(--md-ref-palette-error70)"
+            // stroke="var(--md-ref-palette-tertiary50)"
+            // fill="var(--md-ref-palette-tertiary70)"
             isAnimationActive={false}
           />
         </LineChart>
