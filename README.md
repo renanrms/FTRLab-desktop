@@ -7,3 +7,13 @@ Funciona em conjunto com dispositivos de sensoriamento, programados com suporte 
 Incorpora funcionamento plug-and-play, interface intuitiva, dispositivos flexíveis que podem ser combinados em diferentes experiências, visualização de dados em tempo real e exportação em formato CSV para processamentos posteriores.
 
 ![FTRLab-capture](https://github.com/renanrms/FTRLab-desktop/assets/34728048/11425ec6-2210-4ce6-9c62-a331a063d33c)
+
+## Desenvolvimento
+
+### Atualização
+
+Para verificar a versão de dependências que vem junto com o electron, utilize o comando a seguir na pasta raiz do repositório. A versão target do chrome precisa ser atualizada no arquivo `electron.vite.config` para corresponder à versão utilizada pelo electron.
+
+```sh
+./node_modules/electron/dist/electron
+```

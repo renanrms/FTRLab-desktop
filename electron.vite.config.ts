@@ -35,6 +35,15 @@ export default defineConfig({
         '@renderer': path.resolve('src/renderer/src'),
       },
     },
+    // Ensure esbuild/vite targets the Chromium version bundled with the Electron runtime.
+    build: {
+      target: 'chrome104',
+    },
+    optimizeDeps: {
+      esbuildOptions: {
+        target: 'chrome104',
+      },
+    },
     plugins: [tsconfigPaths, react()],
   },
 })
