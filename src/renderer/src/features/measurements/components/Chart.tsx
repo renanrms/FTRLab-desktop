@@ -269,7 +269,9 @@ export function Chart(props: ChartProps) {
 
         <div className="ml-4 mr-4 flex items-center">
           <div className="w-36 mx-4">
-            <Typography variant="caption">Q (process)</Typography>
+            <Typography variant="caption">
+              Q (processo): {processVar}
+            </Typography>
             <Slider
               value={processVar}
               min={0}
@@ -280,7 +282,9 @@ export function Chart(props: ChartProps) {
           </div>
 
           <div className="w-36">
-            <Typography variant="caption">R (measurement)</Typography>
+            <Typography variant="caption">
+              R (medição): {measurementNoise}
+            </Typography>
             <Slider
               value={measurementNoise}
               min={0}
