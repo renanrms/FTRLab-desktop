@@ -23,12 +23,13 @@ import { Sensor } from '@shared/types/Device'
 import { Measurement } from '@shared/types/Measurement'
 
 import { useChartControls } from '../hooks/useChartControls'
+import { useSensorMeasurements } from '../hooks/useSensorMeasurements'
 
 interface ChartProps {
   className?: string
   XAxis: { key: string; name: string }
   YAxis: { key: string; name: string }
-  data: Measurement[]
+  data: Measurement[] // Original data prop
   sensor: Sensor
   timeRange: number
 }
@@ -38,7 +39,7 @@ export function Chart(props: ChartProps) {
 
   // Using a Linear Kalman Filter, assuming constant velocity model...
 
-  const [x, setX] = useState<number[][]>([[props.data?.[0]?.value ?? 0], [0]]) // Initial state (position and velocity)
+  const [x, setX] = useState<number[][]>([[props.data[0]?.value ?? 0], [0]]) // Initial state (position and velocity)
 
   const [P, setP] = useState([
     [1, 0],
@@ -48,10 +49,6 @@ export function Chart(props: ChartProps) {
   const [estimates, setEstimates] = useState<
     { value: number; timestamp: number }[]
   >([])
-
-  // const xK = x
-  // const pK = P
-  let estimatesK = estimates
 
   const F = (dt: number) => [
     [1, dt],
@@ -66,7 +63,7 @@ export function Chart(props: ChartProps) {
 
   const H = [[1, 0]] // Observation Matrix
 
-  const R = [[1000000000000]] // Measurement Noise Covariance
+  const R = [[0.5]] // Measurement Noise Covariance
 
   function kalmanFilterEstimate(
     value: number,
@@ -78,7 +75,7 @@ export function Chart(props: ChartProps) {
     const xPredict = multiply(F(dt), xK) // Predicted state estimate
     const pPredict = add(
       multiply(multiply(F(dt), pK), transpose(F(dt))),
-      Q(dt, 0.005),
+      Q(dt, 0.05),
     ) // Predicted estimate covariance
 
     // Correct
@@ -129,35 +126,50 @@ export function Chart(props: ChartProps) {
         pK,
       ))
 
-      // xK = xEstimate
-      // pK = pEstimate
-
       console.log('xK after', xK)
 
       return { value: xK[0][0], timestamp: measurement.timestamp }
     })
 
-    estimatesK = estimates.concat(newEstimates)
-
     setX(xK)
     setP(pK)
-    setEstimates(estimatesK)
+    setEstimates(estimates.concat(newEstimates))
   }
 
+  // Use the sensor-specific measurements from the new hook
+  const { measurements } = useSensorMeasurements(
+    props.sensor.id,
+    props.timeRange,
+  )
+
+  // When measurements arrive, initialize x if needed and feed new measurements to the Kalman filter
   useEffect(() => {
-    if (props.data.length > estimates.length) {
+    let x0 = x
+    let p0 = P
+
+    // If we are initializing (no estimates yet), prepare local initial state
+    if (measurements.length && estimates.length === 0) {
+      x0 = [[measurements[0].value ?? 0], [0]]
+      p0 = [
+        [1, 0],
+        [0, 1],
+      ]
+    }
+
+    if (measurements.length > estimates.length) {
       console.log(
         'New data for Kalman Filter:',
-        props.data.slice(estimates.length),
+        measurements.slice(estimates.length),
       )
       console.log('Current estimates:', estimates)
       kalmanFilterNewMeasurements(
-        props.data.slice(estimates.length),
+        measurements.slice(estimates.length),
         estimates,
-        x,
-        P,
+        x0,
+        p0,
       )
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   })
 
   return (
@@ -299,7 +311,7 @@ export function Chart(props: ChartProps) {
           <Line
             type="monotone"
             dataKey={props.YAxis.key}
-            data={props.data}
+            data={measurements}
             name={props.YAxis.name}
             dot={chartControls.showPoints}
             strokeWidth={2}
