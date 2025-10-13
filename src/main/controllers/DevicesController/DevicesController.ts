@@ -111,13 +111,37 @@ export class DevicesController {
           value,
         }))
 
+        // Insere os dados no banco de forma síncrona para garantir que fiquem em ordem.
+        await MeasurementModel.bulkCreate(records)
+
+        // Agrupa por sensorId e notifica o renderer para cada sensor separadamente.
+        const bySensor: { [sensorId: string]: any[] } = {}
+        for (const r of records) {
+          bySensor[r.sensorId] = bySensor[r.sensorId] || []
+          bySensor[r.sensorId].push(r)
+        }
+
+        // Notifica por sensor
+        for (const [sensorId, sensorMeasurements] of Object.entries(bySensor)) {
+          try {
+            // import dinâmico para evitar dependência cíclica no topo do arquivo
+            const { sendMeasurementNotify } = await import(
+              '@main/ipc/services/sendDevicesMeasurementNotify'
+            )
+            sendMeasurementNotify({
+              sensorId,
+              measurements: sensorMeasurements,
+            })
+          } catch (err) {
+            console.error('Failed to send measurement notify', err)
+          }
+        }
+
+        // Mantemos o envio agregado para compatibilidade com consumidores antigos
         sendMeasurementUpdate({
           measurements: records,
           deviceId,
         })
-
-        // Insere os dados no banco de forma síncrona para garantir que fiquem em ordem.
-        await MeasurementModel.bulkCreate(records)
       }
     } catch (error) {
       console.log(error)

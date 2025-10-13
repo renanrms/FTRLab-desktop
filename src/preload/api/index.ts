@@ -1,6 +1,7 @@
 import { IpcRendererEvent, ipcRenderer } from 'electron'
 
 import { CHANNELS } from '@shared/constants/channels'
+import { SensorId } from '@shared/types/Device'
 import {
   CloseDeviceConnectionRequest,
   DevicesInfoUpdateMessage,
@@ -11,6 +12,9 @@ import {
   GetAllMeasurementsResponse,
   GetAppInfoResponse,
   MeasurementUpdateMessage,
+  MeasurementNotifyMessage,
+  GetMeasurementsRangeRequest,
+  GetMeasurementsRangeResponse,
   OpenDeviceConnectionRequest,
   UpdateDeviceSettingsRequest,
 } from '@shared/types/ipc'
@@ -66,6 +70,12 @@ export const api = {
       )
     },
 
+    async getRange(
+      request: GetMeasurementsRangeRequest,
+    ): Promise<GetMeasurementsRangeResponse> {
+      return await ipcRenderer.invoke(CHANNELS.MEASUREMENTS.GET_RANGE, request)
+    },
+
     async deleteAll(request: void): Promise<void> {
       return await ipcRenderer.invoke(CHANNELS.MEASUREMENTS.DELETE_ALL, request)
     },
@@ -84,6 +94,23 @@ export const api = {
 
       return () => {
         ipcRenderer.removeListener(CHANNELS.MEASUREMENTS.UPDATE, callback)
+      }
+    },
+
+    onNotify(
+      sensorId: SensorId,
+      callback: (
+        event: IpcRendererEvent,
+        params: MeasurementNotifyMessage,
+      ) => void,
+    ) {
+      ipcRenderer.on(CHANNELS.MEASUREMENTS.NOTIFY(sensorId), callback)
+
+      return () => {
+        ipcRenderer.removeListener(
+          CHANNELS.MEASUREMENTS.NOTIFY(sensorId),
+          callback,
+        )
       }
     },
   },

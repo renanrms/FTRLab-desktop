@@ -16,6 +16,21 @@ export interface MeasurementUpdateMessage {
   deviceId: string
 }
 
+export interface MeasurementNotifyMessage {
+  sensorId: string
+  measurements: Measurement[]
+}
+
+export interface GetMeasurementsRangeRequest {
+  sensorId: string
+  start?: number
+  end?: number
+}
+
+export interface GetMeasurementsRangeResponse {
+  measurements: Measurement[]
+}
+
 // Comunicação partindo do processo Renderer
 
 export interface GetAppInfoResponse {

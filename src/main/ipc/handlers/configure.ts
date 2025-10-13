@@ -21,6 +21,8 @@ import {
   GetAllMeasurementsResponse,
   GetAppInfoResponse,
   OpenDeviceConnectionRequest,
+  GetMeasurementsRangeRequest,
+  GetMeasurementsRangeResponse,
 } from '@shared/types/ipc'
 import { Measurement } from '@shared/types/Measurement'
 
@@ -135,6 +137,44 @@ export function configureIpcHandlers(devicesController: DevicesController) {
       return {
         measurementsBySensor,
       }
+    },
+  )
+
+  ipcMain.handle(
+    CHANNELS.MEASUREMENTS.GET_RANGE,
+    async (
+      event,
+      request: GetMeasurementsRangeRequest,
+    ): Promise<GetMeasurementsRangeResponse> => {
+      console.log(
+        `<= ${CHANNELS.MEASUREMENTS.GET_RANGE} \n${JSON.stringify(request)}`,
+      )
+
+      const where: any = {
+        sensorId: request.sensorId,
+      }
+
+      if (
+        typeof request.start === 'number' ||
+        typeof request.end === 'number'
+      ) {
+        where.timestamp = {}
+        if (typeof request.start === 'number') {
+          where.timestamp[Op.gte] = request.start
+        }
+        if (typeof request.end === 'number') {
+          where.timestamp[Op.lte] = request.end
+        }
+      }
+
+      const measurements: Measurement[] = (
+        await MeasurementModel.findAll({
+          where,
+          order: [['timestamp', 'ASC']],
+        })
+      ).map((m) => transformToRelativeTime(m.dataValues))
+
+      return { measurements }
     },
   )
 
