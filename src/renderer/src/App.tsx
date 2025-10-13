@@ -8,12 +8,12 @@ import { ThemeProvider } from './components/providers/ThemeProvider'
 import { Sidebar } from './components/Sidebar'
 import { useDevices } from './features/devices/hooks/useDevices'
 import { ChartsArea } from './features/measurements/components/ChartsArea'
-import { useMeasurements } from './features/measurements/hooks/useMeasurements'
+import { clearMeasurements } from './features/measurements/utils/clearMeasurements'
 
 export function App() {
   const [timeRange, setTimeRange] = useState<number>(45)
   const devices = useDevices()
-  const { sensorMeasurements, clearMeasurements } = useMeasurements(timeRange)
+  // const { clearMeasurements } = useMeasurements(timeRange)
 
   return (
     <ReactQueryProvider>
@@ -32,11 +32,7 @@ export function App() {
             timeRange={timeRange}
             setTimeRange={setTimeRange}
           ></Sidebar>
-          <ChartsArea
-            devices={devices}
-            sensorMeasurements={sensorMeasurements}
-            timeRange={timeRange}
-          ></ChartsArea>
+          <ChartsArea devices={devices} timeRange={timeRange}></ChartsArea>
         </div>
       </ThemeProvider>
     </ReactQueryProvider>

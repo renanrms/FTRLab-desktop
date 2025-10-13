@@ -29,17 +29,20 @@ interface ChartProps {
   className?: string
   XAxis: { key: string; name: string }
   YAxis: { key: string; name: string }
-  data: Measurement[] // Original data prop
   sensor: Sensor
   timeRange: number
 }
 
 export function Chart(props: ChartProps) {
   const chartControls = useChartControls()
+  const { measurements } = useSensorMeasurements(
+    props.sensor.id,
+    props.timeRange,
+  )
 
   // Using a Linear Kalman Filter, assuming constant velocity model...
 
-  const [x, setX] = useState<number[][]>([[props.data?.[0]?.value ?? 0], [0]]) // Initial state (position and velocity)
+  const [x, setX] = useState<number[][]>([[measurements?.[0]?.value ?? 0], [0]]) // Initial state (position and velocity)
 
   const [P, setP] = useState([
     [1, 0],
@@ -135,12 +138,6 @@ export function Chart(props: ChartProps) {
     setP(pK)
     setEstimates(estimates.concat(newEstimates))
   }
-
-  // Use the sensor-specific measurements from the new hook
-  const { measurements } = useSensorMeasurements(
-    props.sensor.id,
-    props.timeRange,
-  )
 
   // When measurements arrive, initialize x if needed and feed new measurements to the Kalman filter
   useEffect(() => {
