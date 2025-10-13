@@ -5,7 +5,7 @@ import ExpandRoundedIcon from '@mui/icons-material/ExpandRounded'
 import ScatterPlotRoundedIcon from '@mui/icons-material/ScatterPlotRounded'
 import ShowChartRoundedIcon from '@mui/icons-material/ShowChartRounded'
 import VerticalAlignBottomRoundedIcon from '@mui/icons-material/VerticalAlignBottomRounded'
-import { Button, IconButton } from '@mui/material'
+import { Button, IconButton, Slider, Typography } from '@mui/material'
 import { add, identity, inv, multiply, subtract, transpose } from 'mathjs'
 import {
   CartesianGrid,
@@ -35,6 +35,10 @@ interface ChartProps {
 
 export function Chart(props: ChartProps) {
   const chartControls = useChartControls()
+
+  // Kalman tunable parameters (adjustable via sliders)
+  const [processVar, setProcessVar] = useState<number>(0.05)
+  const [measurementNoise, setMeasurementNoise] = useState<number>(0.5)
   const { measurements } = useSensorMeasurements(
     props.sensor.id,
     props.timeRange,
@@ -66,7 +70,8 @@ export function Chart(props: ChartProps) {
 
   const H = [[1, 0]] // Observation Matrix
 
-  const R = [[0.5]] // Measurement Noise Covariance
+  // Measurement Noise Covariance (uses dynamic state)
+  const R = [[measurementNoise]] // Measurement Noise Covariance
 
   function kalmanFilterEstimate(
     value: number,
@@ -78,7 +83,7 @@ export function Chart(props: ChartProps) {
     const xPredict = multiply(F(dt), xK) // Predicted state estimate
     const pPredict = add(
       multiply(multiply(F(dt), pK), transpose(F(dt))),
-      Q(dt, 0.05),
+      Q(dt, processVar),
     ) // Predicted estimate covariance
 
     // Correct
@@ -261,6 +266,30 @@ export function Chart(props: ChartProps) {
           <DownloadOutlinedIcon sx={{ fontSize: '22px' }} />
           <span className="mx-2">Exportar</span>
         </Button>
+
+        <div className="ml-4 mr-4 flex items-center">
+          <div className="w-36 mx-4">
+            <Typography variant="caption">Q (process)</Typography>
+            <Slider
+              value={processVar}
+              min={0}
+              max={1}
+              step={0.01}
+              onChange={(_, v) => setProcessVar(v as number)}
+            />
+          </div>
+
+          <div className="w-36">
+            <Typography variant="caption">R (measurement)</Typography>
+            <Slider
+              value={measurementNoise}
+              min={0}
+              max={10}
+              step={0.1}
+              onChange={(_, v) => setMeasurementNoise(v as number)}
+            />
+          </div>
+        </div>
       </div>
 
       <ResponsiveContainer width="100%" height="100%" debounce={20}>
