@@ -20,7 +20,7 @@ export function ChartsArea(props: ChartsAreaProps) {
       {props.devices
         .map((device) =>
           device.sensors.filter(
-            (sensor) => device.connected || props.sensorMeasurements[sensor.id],
+            (sensor) => device.connected || sensor.hasMeasurement,
           ),
         )
         .flat()

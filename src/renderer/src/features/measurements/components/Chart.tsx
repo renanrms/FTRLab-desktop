@@ -39,7 +39,7 @@ export function Chart(props: ChartProps) {
 
   // Using a Linear Kalman Filter, assuming constant velocity model...
 
-  const [x, setX] = useState<number[][]>([[props.data[0]?.value ?? 0], [0]]) // Initial state (position and velocity)
+  const [x, setX] = useState<number[][]>([[props.data?.[0]?.value ?? 0], [0]]) // Initial state (position and velocity)
 
   const [P, setP] = useState([
     [1, 0],
