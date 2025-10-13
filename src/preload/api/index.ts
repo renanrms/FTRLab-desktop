@@ -9,9 +9,7 @@ import {
   FindAllMeasurementsByDeviceRequest,
   FindAllMeasurementsByDeviceResponse,
   GetAllDevicesResponse,
-  GetAllMeasurementsResponse,
   GetAppInfoResponse,
-  MeasurementUpdateMessage,
   MeasurementNotifyMessage,
   GetMeasurementsRangeRequest,
   GetMeasurementsRangeResponse,
@@ -57,10 +55,6 @@ export const api = {
     },
   },
   measurements: {
-    async getAll(request: void): Promise<GetAllMeasurementsResponse> {
-      return await ipcRenderer.invoke(CHANNELS.MEASUREMENTS.GET_ALL, request)
-    },
-
     async findLastByDevice(
       request: FindAllMeasurementsByDeviceRequest,
     ): Promise<FindAllMeasurementsByDeviceResponse> {
@@ -82,19 +76,6 @@ export const api = {
 
     async export(request: ExportMeasurementsRequest): Promise<void> {
       return await ipcRenderer.invoke(CHANNELS.MEASUREMENTS.EXPORT, request)
-    },
-
-    onUpdate(
-      callback: (
-        event: IpcRendererEvent,
-        params: MeasurementUpdateMessage,
-      ) => void,
-    ) {
-      ipcRenderer.on(CHANNELS.MEASUREMENTS.UPDATE, callback)
-
-      return () => {
-        ipcRenderer.removeListener(CHANNELS.MEASUREMENTS.UPDATE, callback)
-      }
     },
 
     onNotify(

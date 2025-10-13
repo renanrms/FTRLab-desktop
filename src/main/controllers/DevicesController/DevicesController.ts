@@ -6,7 +6,7 @@ import { startTime } from '@main/constants/startTime'
 import { DeviceModel, MeasurementModel } from '@main/database/models'
 import { findAllDevices } from '@main/database/queries/findAllDevices'
 import { sendDevicesInfoUpdate } from '@main/ipc/services/sendDevicesInfoUpdate'
-import { sendMeasurementUpdate } from '@main/ipc/services/sendDevicesMeasurementUpdate'
+import { sendMeasurementNotify } from '@main/ipc/services/sendDevicesMeasurementNotify'
 import { ConnectionData } from '@shared/types/ConnectionData'
 import { Device } from '@shared/types/Device'
 import { DeviceMeasurement } from '@shared/types/Measurement'
@@ -124,10 +124,6 @@ export class DevicesController {
         // Notifica por sensor
         for (const [sensorId, sensorMeasurements] of Object.entries(bySensor)) {
           try {
-            // import dinâmico para evitar dependência cíclica no topo do arquivo
-            const { sendMeasurementNotify } = await import(
-              '@main/ipc/services/sendDevicesMeasurementNotify'
-            )
             sendMeasurementNotify({
               sensorId,
               measurements: sensorMeasurements,
@@ -136,12 +132,6 @@ export class DevicesController {
             console.error('Failed to send measurement notify', err)
           }
         }
-
-        // Mantemos o envio agregado para compatibilidade com consumidores antigos
-        sendMeasurementUpdate({
-          measurements: records,
-          deviceId,
-        })
       }
     } catch (error) {
       console.log(error)

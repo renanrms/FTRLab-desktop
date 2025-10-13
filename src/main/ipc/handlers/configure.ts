@@ -18,7 +18,6 @@ import {
   FindAllMeasurementsByDeviceRequest,
   FindAllMeasurementsByDeviceResponse,
   GetAllDevicesResponse,
-  GetAllMeasurementsResponse,
   GetAppInfoResponse,
   OpenDeviceConnectionRequest,
   GetMeasurementsRangeRequest,
@@ -73,19 +72,6 @@ export function configureIpcHandlers(devicesController: DevicesController) {
       return {
         message: 'Conexão encerrada',
         connection: await devicesController.closeConnection(request.deviceId),
-      }
-    },
-  )
-
-  ipcMain.handle(
-    CHANNELS.MEASUREMENTS.GET_ALL,
-    async (event, request: void): Promise<GetAllMeasurementsResponse> => {
-      console.log(`<= ${CHANNELS.MEASUREMENTS.GET_ALL}`)
-      const measurements = (await MeasurementModel.findAll()).map(
-        (model) => model.dataValues,
-      )
-      return {
-        measurements,
       }
     },
   )

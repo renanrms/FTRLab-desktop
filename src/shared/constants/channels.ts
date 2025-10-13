@@ -16,9 +16,7 @@ export const CHANNELS = {
     UPDATE_SETTINGS: 'devices:update-settings',
   },
   MEASUREMENTS: {
-    UPDATE: 'measurements:update',
     NOTIFY: (sensorId: SensorId) => `measurements:notify:${sensorId}`,
-    GET_ALL: 'measurements:get-all',
     FIND_LAST_BY_DEVICE: 'measurements:find-last-by-device',
     GET_RANGE: 'measurements:get-range',
     DELETE_ALL: 'measurements:delete-all',

@@ -1,6 +1,7 @@
 import { copy } from './copy'
 
 // TODO: verificar se existe problema de concorrência com esta classe. Caso positivo implementar trava.
+// TODO: verificar possibilidade de uso para remoção.
 
 /**
  * Estado em formato chave-objeto.
