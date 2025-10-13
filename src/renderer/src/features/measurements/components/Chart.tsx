@@ -177,7 +177,7 @@ export function Chart(props: ChartProps) {
   return (
     <div
       className={twMerge(
-        'p-4 pb-16 shadow border-2 border-secondary-90 dark:border-primary-30 bg-neutral-100 dark:bg-[#00000070] rounded-lg',
+        'p-4 pb-20 shadow border-2 border-secondary-90 dark:border-primary-30 bg-neutral-100 dark:bg-[#00000070] rounded-lg',
         props.className,
       )}
     >
@@ -278,6 +278,7 @@ export function Chart(props: ChartProps) {
               max={1}
               step={0.01}
               onChange={(_, v) => setProcessVar(v as number)}
+              size="small"
             />
           </div>
 
@@ -291,6 +292,7 @@ export function Chart(props: ChartProps) {
               max={10}
               step={0.1}
               onChange={(_, v) => setMeasurementNoise(v as number)}
+              size="small"
             />
           </div>
         </div>
