@@ -223,10 +223,21 @@ export function Chart(props: ChartProps) {
             domain={
               chartControls.showExpandedY
                 ? ([dataMin, dataMax]) => {
+                    const magnitude =
+                      10 ** Math.floor(Math.log10(dataMax - dataMin)) / 100
+                    dataMin = Math.floor(dataMin / magnitude) * magnitude
+                    dataMax = Math.ceil(dataMax / magnitude) * magnitude
                     return [dataMin, dataMax]
                   }
                 : undefined
             }
+            tickFormatter={(value: number) => {
+              const valueString = value.toString()
+              if (valueString.length > 5) {
+                return value.toExponential(2)
+              }
+              return valueString
+            }}
           >
             <Label
               value={props.YAxis.name}
