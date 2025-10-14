@@ -1,10 +1,10 @@
-import { identity } from 'mathjs'
+import { add, identity, multiply } from 'mathjs'
 
-import { KalmanFilterParams, KalmanFilterState } from './KalmanFilter'
+import { KalmanFilterParams } from './KalmanFilter'
 
-type ModelName =
-  | 'constante-position'
-  | 'constante-velocity'
+export type ModelName =
+  | 'constant-position'
+  | 'constant-velocity'
   | 'constant-acceleration'
 
 /**
@@ -13,96 +13,120 @@ type ModelName =
  *        'constante-velocity' (velocidade constante),
  *        'constant-acceleration' (aceleração constante)
  */
-export default function getKalmanFilterParams(
+export function getKalmanFilterParams(
   model: ModelName,
   processNoise: number,
   measurementNoise: number,
 ): KalmanFilterParams {
   switch (model) {
-    case 'constante-position': {
-      // Simple model: position is constant (velocity ~ 0)
-      const F = (dt: number) => [[1]]
-
-      const Q = (dt: number) => [[1e-2 * processNoise * dt]]
-
-      const H = [[1]]
-      const R = [[0.01 * measurementNoise]]
-
-      const S0: KalmanFilterState = {
-        x: [[0]], // posição
-        P: identity(1) as number[][],
-        t: -Date.now() / 1000,
+    case 'constant-position': {
+      // 1-state model: position is constant.
+      // States: [position]
+      // We consider a process additive noise on velocity.
+      return {
+        order: 1,
+        F: (dt: number) => [[1]],
+        Q: (dt: number) => [[processNoise * dt]],
+        H: [[1]],
+        R: [[measurementNoise]],
+        S0: {
+          x: [[0]],
+          P: identity(1) as number[][],
+          t: -Date.now() / 1000,
+        },
       }
-
-      return { F, Q, H, R, S0 }
     }
 
-    case 'constante-velocity': {
-      // Constant velocity model: position and velocity state
-      const F = (dt: number) => [
-        [1, dt],
-        [0, 1],
-      ]
+    case 'constant-velocity': {
+      // 2-state model: velocity is constant.
+      // States: [position, velocity]
+      // We consider a process additive noise on acceleration.
+      // TODO: Testar ruído aditivo em todas as componentes do estado.
+      return {
+        order: 2,
+        F: (dt: number) => [
+          [1, dt],
+          [0, 1],
+        ],
+        Q: (dt: number) => {
+          const q = processNoise
+          return multiply(
+            q,
+            // Teste 1: matriz de covariância do modelo de movimento Browniano (Wiener) integrado duas vezes
+            // [
+            //   [dt ** 4 / 4, dt ** 3 / 2],
+            //   [dt ** 3 / 2, dt ** 2],
+            // ],
 
-      const Q = (dt: number) => {
-        // Process noise for constant velocity model
-        const q = processNoise
-        return [
-          [(dt ** 3 / 3) * q, (dt ** 2 / 2) * q],
-          [(dt ** 2 / 2) * q, dt * q],
-        ]
-        // return [
-        //   [q, q * dt ** 2],
-        //   [0, q],
-        // ]
+            // Teste 2: outra matriz ad-hoc que também funciona
+            // [
+            //   [1, dt ** 2],
+            //   [0, 1],
+            // ]
+
+            // Teste 3: considerando ruídos aditivos em todas as componentes do estado
+            add(
+              [
+                [dt ** 4 / 4, dt ** 3 / 2],
+                [dt ** 3 / 2, dt ** 2],
+              ],
+              add(
+                [
+                  [dt ** 2 / 2, dt],
+                  [dt, 1],
+                ],
+                [
+                  [dt, 1],
+                  [1, 0],
+                ],
+              ),
+            ),
+          ) as number[][]
+        },
+        H: [[1, 0]],
+        R: [[measurementNoise]],
+        S0: {
+          x: [[0], [0]],
+          P: identity(2) as number[][],
+          t: -Date.now() / 1000,
+        },
       }
-
-      const H = [[1, 0]]
-      const R = [[measurementNoise]]
-
-      const S0: KalmanFilterState = {
-        x: [[0], [0]], // posição, velocidade
-        P: identity(2) as number[][],
-        t: -Date.now() / 1000,
-      }
-
-      return { F, Q, H, R, S0 }
     }
 
     case 'constant-acceleration': {
-      // Keep 2-state model but increase process noise to emulate acceleration
-      const F = (dt: number) => [
-        [1, dt],
-        [0, 1],
-      ]
-
-      const Q = (dt: number) => {
-        // larger process noise to account for unmodeled acceleration
-        const q11 = dt ** 3 / 3
-        const q12 = dt ** 2 / 2
-        const q22 = dt
-        return [
-          [q11 * 1 * processNoise, q12 * 1 * processNoise],
-          [q12 * 1 * processNoise, q22 * 1 * processNoise],
-        ]
+      // 3-state model: acceleration is constant.
+      // States: [position, velocity, acceleration]
+      // We consider a process additive noise on acceleration derivate.
+      // TODO: Testar ruído aditivo em todas as componentes do estado.
+      return {
+        order: 3,
+        F: (dt: number) => [
+          [1, dt, 0.5 * dt * dt],
+          [0, 1, dt],
+          [0, 0, 1],
+        ],
+        Q: (dt: number) => {
+          const q = processNoise
+          return [
+            [(dt ** 5 / 20) * q, (dt ** 4 / 8) * q, (dt ** 3 / 6) * q],
+            [(dt ** 4 / 8) * q, (dt ** 3 / 3) * q, (dt ** 2 / 2) * q],
+            [(dt ** 3 / 6) * q, (dt ** 2 / 2) * q, dt * q],
+          ]
+        },
+        H: [[1, 0, 0]],
+        R: [[measurementNoise]],
+        S0: {
+          x: [[0], [0], [0]],
+          P: identity(3) as number[][],
+          t: -Date.now() / 1000,
+        },
       }
-
-      const H = [[1, 0]]
-      const R = [[5e-2 * measurementNoise]]
-
-      const S0: KalmanFilterState = {
-        x: [[0], [0]], // posição, velocidade
-        P: identity(2) as number[][],
-        t: -Date.now() / 1000,
-      }
-
-      return { F, Q, H, R, S0 }
     }
 
     default:
       // fallback to constant velocity
       return getKalmanFilterParams(
-        'constante-velocity',
+        'constant-velocity',
         processNoise,
         measurementNoise,
       )

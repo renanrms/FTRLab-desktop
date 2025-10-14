@@ -23,7 +23,10 @@ import { Sensor } from '@shared/types/Device'
 // Measurement type is not directly used here (removed import)
 import { useChartControls } from '../hooks/useChartControls'
 import { useSensorMeasurements } from '../hooks/useSensorMeasurements'
-import getKalmanFilterParams from '../services/getKalmanFilterParams'
+import {
+  getKalmanFilterParams,
+  ModelName,
+} from '../services/getKalmanFilterParams'
 import { KalmanFilter1D } from '../services/KalmanFilter'
 
 interface ChartProps {
@@ -38,7 +41,7 @@ export function Chart(props: ChartProps) {
   const chartControls = useChartControls()
 
   // Kalman tunable parameters (adjustable via sliders)
-  const [processNoise, setProcessNoise] = useState<number>(0.05)
+  const [processNoise, setProcessNoise] = useState<number>(0.5)
   const [measurementNoise, setMeasurementNoise] = useState<number>(0.5)
   const { measurements } = useSensorMeasurements(
     props.sensor.id,
@@ -46,7 +49,7 @@ export function Chart(props: ChartProps) {
   )
 
   // Using a Kalman Filter — start with 'constante-position' model
-  const model = 'constante-velocity' as const
+  const model: ModelName = 'constant-velocity'
   const params = useMemo(
     () => getKalmanFilterParams(model, processNoise, measurementNoise),
     [model, processNoise, measurementNoise],

@@ -1,12 +1,4 @@
-import {
-  add,
-  identity,
-  inv,
-  multiply,
-  subtract,
-  transpose,
-  zeros,
-} from 'mathjs'
+import { add, identity, inv, multiply, subtract, transpose } from 'mathjs'
 
 import { Measurement } from '@shared/types/Measurement'
 
@@ -17,6 +9,7 @@ export interface KalmanFilterState {
 }
 
 export interface KalmanFilterParams {
+  order: number
   F: (dt: number) => number[][]
   Q: (dt: number) => number[][]
   H: number[][]
@@ -25,6 +18,7 @@ export interface KalmanFilterParams {
 }
 
 export class KalmanFilter1D {
+  order: number
   F: KalmanFilterParams['F']
   Q: KalmanFilterParams['Q']
   H: KalmanFilterParams['H']
@@ -32,15 +26,12 @@ export class KalmanFilter1D {
   S: KalmanFilterState
 
   constructor(params: KalmanFilterParams) {
+    this.order = params.order
     this.F = params.F
     this.Q = params.Q
     this.H = params.H
     this.R = params.R
-    this.S = {
-      x: params.S0.x || zeros(2, 1), // Estado inicial (posição e velocidade)
-      P: params.S0.P || identity(2), //
-      t: params.S0.t || -Date.now() / 1000, // t muito no passado dará peso maior à primeira medida
-    }
+    this.S = { ...params.S0 }
   }
 
   predict(t: number): KalmanFilterState {
@@ -61,7 +52,10 @@ export class KalmanFilter1D {
       inv(add(multiply(multiply(this.H, Se.P), transpose(this.H)), this.R)),
     ) // Kalman Gain
 
-    const aux = subtract(identity(2), multiply(K, this.H)) as number[][]
+    const aux = subtract(
+      identity(this.order),
+      multiply(K, this.H),
+    ) as number[][]
     const pEstimate = add(
       multiply(multiply(aux, Se.P), transpose(aux)),
       multiply(multiply(K, this.R), transpose(K)),
