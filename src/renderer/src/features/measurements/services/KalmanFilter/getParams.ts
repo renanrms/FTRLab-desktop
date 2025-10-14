@@ -1,6 +1,6 @@
-import { add, identity, multiply } from 'mathjs'
+import { add, multiply } from 'mathjs'
 
-import { KalmanFilterParams } from './KalmanFilter'
+import { KalmanFilterParams } from './KalmanFilter1D'
 
 export type ModelName =
   | 'constant-position'
@@ -13,7 +13,7 @@ export type ModelName =
  *        'constante-velocity' (velocidade constante),
  *        'constant-acceleration' (aceleração constante)
  */
-export function getKalmanFilterParams(
+export function getParams(
   model: ModelName,
   processNoise: number,
   measurementNoise: number,
@@ -29,11 +29,6 @@ export function getKalmanFilterParams(
         Q: (dt: number) => [[processNoise * dt]],
         H: [[1]],
         R: [[measurementNoise]],
-        S0: {
-          x: [[0]],
-          P: identity(1) as number[][],
-          t: -Date.now() / 1000,
-        },
       }
     }
 
@@ -85,11 +80,6 @@ export function getKalmanFilterParams(
         },
         H: [[1, 0]],
         R: [[measurementNoise]],
-        S0: {
-          x: [[0], [0]],
-          P: identity(2) as number[][],
-          t: -Date.now() / 1000,
-        },
       }
     }
 
@@ -115,20 +105,11 @@ export function getKalmanFilterParams(
         },
         H: [[1, 0, 0]],
         R: [[measurementNoise]],
-        S0: {
-          x: [[0], [0], [0]],
-          P: identity(3) as number[][],
-          t: -Date.now() / 1000,
-        },
       }
     }
 
     default:
       // fallback to constant velocity
-      return getKalmanFilterParams(
-        'constant-velocity',
-        processNoise,
-        measurementNoise,
-      )
+      return getParams('constant-velocity', processNoise, measurementNoise)
   }
 }

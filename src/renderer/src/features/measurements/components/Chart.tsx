@@ -24,11 +24,11 @@ import { Sensor } from '@shared/types/Device'
 import { useChartControls } from '../hooks/useChartControls'
 import { useSensorMeasurements } from '../hooks/useSensorMeasurements'
 import {
-  getKalmanFilterParams,
+  getInitialState,
+  getParams,
+  KalmanFilter1D,
   ModelName,
-} from '../services/getKalmanFilterParams'
-import { KalmanFilter1D } from '../services/KalmanFilter'
-
+} from '../services/KalmanFilter'
 interface ChartProps {
   className?: string
   XAxis: { key: string; name: string }
@@ -39,32 +39,33 @@ interface ChartProps {
 
 export function Chart(props: ChartProps) {
   const chartControls = useChartControls()
-
-  // Kalman tunable parameters (adjustable via sliders)
-  const [processNoise, setProcessNoise] = useState<number>(0.5)
-  const [measurementNoise, setMeasurementNoise] = useState<number>(0.5)
   const { measurements } = useSensorMeasurements(
     props.sensor.id,
     props.timeRange,
   )
 
-  // Using a Kalman Filter — start with 'constante-position' model
+  const [processNoise, setProcessNoise] = useState<number>(0.5)
+  const [measurementNoise, setMeasurementNoise] = useState<number>(0.5)
+
   const model: ModelName = 'constant-velocity'
   const params = useMemo(
-    () => getKalmanFilterParams(model, processNoise, measurementNoise),
+    () => getParams(model, processNoise, measurementNoise),
     [model, processNoise, measurementNoise],
   )
 
-  const [S, setS] = useState(params.S0)
+  const [S, setS] = useState(getInitialState(params.order))
+
+  useEffect(() => {
+    setS(getInitialState(params.order))
+  }, [model, params.order])
 
   const [estimates, setEstimates] = useState<
     { value: number; timestamp: number }[]
   >([])
 
-  // When measurements arrive, initialize x if needed and feed new measurements to the Kalman filter
   useEffect(() => {
     if (measurements.length > estimates.length) {
-      const kf = new KalmanFilter1D({ ...params, S0: S })
+      const kf = new KalmanFilter1D(params, S)
 
       const slice = measurements.slice(estimates.length)
       const { S: newS, estimates: newEstimates } = kf.steps(slice)
@@ -72,7 +73,6 @@ export function Chart(props: ChartProps) {
       setS(newS)
       setEstimates(estimates.concat(newEstimates))
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [measurements, processNoise, measurementNoise])
 
   return (

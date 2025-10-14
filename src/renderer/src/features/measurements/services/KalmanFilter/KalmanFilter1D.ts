@@ -14,7 +14,6 @@ export interface KalmanFilterParams {
   Q: (dt: number) => number[][]
   H: number[][]
   R: number[][]
-  S0: KalmanFilterState
 }
 
 export class KalmanFilter1D {
@@ -25,13 +24,13 @@ export class KalmanFilter1D {
   R: KalmanFilterParams['R']
   S: KalmanFilterState
 
-  constructor(params: KalmanFilterParams) {
+  constructor(params: KalmanFilterParams, initialState: KalmanFilterState) {
     this.order = params.order
     this.F = params.F
     this.Q = params.Q
     this.H = params.H
     this.R = params.R
-    this.S = { ...params.S0 }
+    this.S = initialState
   }
 
   predict(t: number): KalmanFilterState {
