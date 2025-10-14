@@ -8,7 +8,7 @@ import { ThemeProvider } from './components/providers/ThemeProvider'
 import { Sidebar } from './components/Sidebar'
 import { useDevices } from './features/devices/hooks/useDevices'
 import { ChartsArea } from './features/measurements/components/ChartsArea'
-import { clearMeasurements } from './features/measurements/utils/clearMeasurements'
+import { clearMeasurements } from './features/measurements/services/clearMeasurements'
 
 export function App() {
   const [timeRange, setTimeRange] = useState<number>(45)

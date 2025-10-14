@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined'
 import ExpandRoundedIcon from '@mui/icons-material/ExpandRounded'
@@ -6,7 +6,6 @@ import ScatterPlotRoundedIcon from '@mui/icons-material/ScatterPlotRounded'
 import ShowChartRoundedIcon from '@mui/icons-material/ShowChartRounded'
 import VerticalAlignBottomRoundedIcon from '@mui/icons-material/VerticalAlignBottomRounded'
 import { Button, IconButton, Slider, Typography } from '@mui/material'
-import { add, identity, inv, multiply, subtract, transpose } from 'mathjs'
 import {
   CartesianGrid,
   Label,
@@ -20,10 +19,12 @@ import {
 import { twMerge } from 'tailwind-merge'
 
 import { Sensor } from '@shared/types/Device'
-import { Measurement } from '@shared/types/Measurement'
 
+// Measurement type is not directly used here (removed import)
 import { useChartControls } from '../hooks/useChartControls'
 import { useSensorMeasurements } from '../hooks/useSensorMeasurements'
+import getKalmanFilterParams from '../services/getKalmanFilterParams'
+import { KalmanFilter1D } from '../services/KalmanFilter'
 
 interface ChartProps {
   className?: string
@@ -37,142 +38,39 @@ export function Chart(props: ChartProps) {
   const chartControls = useChartControls()
 
   // Kalman tunable parameters (adjustable via sliders)
-  const [processVar, setProcessVar] = useState<number>(0.05)
+  const [processNoise, setProcessNoise] = useState<number>(0.05)
   const [measurementNoise, setMeasurementNoise] = useState<number>(0.5)
   const { measurements } = useSensorMeasurements(
     props.sensor.id,
     props.timeRange,
   )
 
-  // Using a Linear Kalman Filter, assuming constant velocity model...
+  // Using a Kalman Filter — start with 'constante-position' model
+  const model = 'constante-velocity' as const
+  const params = useMemo(
+    () => getKalmanFilterParams(model, processNoise, measurementNoise),
+    [model, processNoise, measurementNoise],
+  )
 
-  const [x, setX] = useState<number[][]>([[measurements?.[0]?.value ?? 0], [0]]) // Initial state (position and velocity)
-
-  const [P, setP] = useState([
-    [1, 0],
-    [0, 1],
-  ]) // Initial Estimate Error Covariance
+  const [S, setS] = useState(params.S0)
 
   const [estimates, setEstimates] = useState<
     { value: number; timestamp: number }[]
   >([])
 
-  const F = (dt: number) => [
-    [1, dt],
-    [0, 1],
-  ] // State Transition Matrix
-
-  const Q = (dt: number, processVar: number) =>
-    [
-      [1, 0.5 * dt ** 2],
-      [0, 1],
-    ].map((row) => row.map((val) => val * processVar)) // Process Noise Covariance
-
-  const H = [[1, 0]] // Observation Matrix
-
-  // Measurement Noise Covariance (uses dynamic state)
-  const R = [[measurementNoise]] // Measurement Noise Covariance
-
-  function kalmanFilterEstimate(
-    value: number,
-    dt: number,
-    xK: number[][],
-    pK: number[][],
-  ) {
-    // Predict
-    const xPredict = multiply(F(dt), xK) // Predicted state estimate
-    const pPredict = add(
-      multiply(multiply(F(dt), pK), transpose(F(dt))),
-      Q(dt, processVar),
-    ) // Predicted estimate covariance
-
-    // Correct
-    const K = multiply(
-      multiply(pPredict, transpose(H)),
-      inv(add(multiply(multiply(H, pPredict), transpose(H)), R)),
-    ) // Kalman Gain
-
-    const aux = subtract(identity(2), multiply(K, H)) as number[][]
-    const pEstimate = add(
-      multiply(multiply(aux, pPredict), transpose(aux)),
-      multiply(multiply(K, R), transpose(K)),
-    ) // Updated estimate covariance
-    const xEstimate = add(
-      xPredict,
-      multiply(K, subtract([[value]], multiply(H, xPredict))),
-    ) // Updated state estimate
-
-    console.log({ K, xPredict, pPredict, xEstimate, pEstimate })
-
-    // mathjs may return DenseMatrix objects. Convert to plain arrays so calling
-    // code can safely use xK[0][0] indexing.
-    const xOut =
-      typeof (xEstimate as any)?.valueOf === 'function'
-        ? (xEstimate as any).valueOf()
-        : xEstimate
-    const pOut =
-      typeof (pEstimate as any)?.valueOf === 'function'
-        ? (pEstimate as any).valueOf()
-        : pEstimate
-
-    return { xK: xOut as number[][], pK: pOut as number[][] }
-  }
-
-  const kalmanFilterNewMeasurements = (
-    newMeasurements: Measurement[],
-    estimates: { value: number; timestamp: number }[],
-    x0: number[][],
-    p0: number[][],
-  ) => {
-    let [xK, pK] = [x0, p0]
-    const newEstimates = newMeasurements.map((measurement) => {
-      ;({ xK, pK } = kalmanFilterEstimate(
-        measurement.value,
-        measurement.timestamp -
-          (estimates.length ? estimates[estimates.length - 1].timestamp : -100),
-        xK,
-        pK,
-      ))
-
-      console.log('xK after', xK)
-
-      return { value: xK[0][0], timestamp: measurement.timestamp }
-    })
-
-    setX(xK)
-    setP(pK)
-    setEstimates(estimates.concat(newEstimates))
-  }
-
   // When measurements arrive, initialize x if needed and feed new measurements to the Kalman filter
   useEffect(() => {
-    let x0 = x
-    let p0 = P
-
-    // If we are initializing (no estimates yet), prepare local initial state
-    if (measurements.length && estimates.length === 0) {
-      x0 = [[measurements[0].value ?? 0], [0]]
-      p0 = [
-        [1, 0],
-        [0, 1],
-      ]
-    }
-
     if (measurements.length > estimates.length) {
-      console.log(
-        'New data for Kalman Filter:',
-        measurements.slice(estimates.length),
-      )
-      console.log('Current estimates:', estimates)
-      kalmanFilterNewMeasurements(
-        measurements.slice(estimates.length),
-        estimates,
-        x0,
-        p0,
-      )
+      const kf = new KalmanFilter1D({ ...params, S0: S })
+
+      const slice = measurements.slice(estimates.length)
+      const { S: newS, estimates: newEstimates } = kf.steps(slice)
+
+      setS(newS)
+      setEstimates(estimates.concat(newEstimates))
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  })
+  }, [measurements, processNoise, measurementNoise])
 
   return (
     <div
@@ -270,14 +168,14 @@ export function Chart(props: ChartProps) {
         <div className="ml-4 mr-4 flex items-center">
           <div className="w-36 mx-4">
             <Typography variant="caption">
-              Q (processo): {processVar}
+              Q (processo): {processNoise}
             </Typography>
             <Slider
-              value={processVar}
+              value={processNoise}
               min={0}
               max={1}
               step={0.01}
-              onChange={(_, v) => setProcessVar(v as number)}
+              onChange={(_, v) => setProcessNoise(v as number)}
               size="small"
             />
           </div>
