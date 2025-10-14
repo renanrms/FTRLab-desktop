@@ -22,13 +22,8 @@ import { Sensor } from '@shared/types/Device'
 
 // Measurement type is not directly used here (removed import)
 import { useChartControls } from '../hooks/useChartControls'
+import { useEstimates } from '../hooks/useEstimates'
 import { useSensorMeasurements } from '../hooks/useSensorMeasurements'
-import {
-  getInitialState,
-  getParams,
-  KalmanFilter1D,
-  ModelName,
-} from '../services/KalmanFilter'
 interface ChartProps {
   className?: string
   XAxis: { key: string; name: string }
@@ -44,36 +39,37 @@ export function Chart(props: ChartProps) {
     props.timeRange,
   )
 
-  const [processNoise, setProcessNoise] = useState<number>(0.5)
-  const [measurementNoise, setMeasurementNoise] = useState<number>(0.5)
+  const { estimates, model, setModel, processNoise, setProcessNoise } =
+    useEstimates(measurements, 'constant-velocity', props.sensor, 0.5)
 
-  const model: ModelName = 'constant-velocity'
-  const params = useMemo(
-    () => getParams(model, processNoise, measurementNoise),
-    [model, processNoise, measurementNoise],
-  )
+  // const [processNoise, setProcessNoise] = useState<number>(0.5)
+  // const [measurementNoise, setMeasurementNoise] = useState<number>(0.5)
+  // const [model, setModel] = useState<ModelName>('constant-velocity')
+  // const params = useMemo(
+  //   () => getParams(model, processNoise, measurementNoise),
+  //   [model, processNoise, measurementNoise],
+  // )
+  // const [S, setS] = useState(getInitialState(params.order))
 
-  const [S, setS] = useState(getInitialState(params.order))
+  // useEffect(() => {
+  //   setS(getInitialState(params.order))
+  // }, [model, params.order])
 
-  useEffect(() => {
-    setS(getInitialState(params.order))
-  }, [model, params.order])
+  // const [estimates, setEstimates] = useState<
+  //   { value: number; timestamp: number }[]
+  // >([])
 
-  const [estimates, setEstimates] = useState<
-    { value: number; timestamp: number }[]
-  >([])
+  // useEffect(() => {
+  //   if (measurements.length > estimates.length) {
+  //     const kf = new KalmanFilter1D(params, S)
 
-  useEffect(() => {
-    if (measurements.length > estimates.length) {
-      const kf = new KalmanFilter1D(params, S)
+  //     const slice = measurements.slice(estimates.length)
+  //     const { S: newS, estimates: newEstimates } = kf.steps(slice)
 
-      const slice = measurements.slice(estimates.length)
-      const { S: newS, estimates: newEstimates } = kf.steps(slice)
-
-      setS(newS)
-      setEstimates(estimates.concat(newEstimates))
-    }
-  }, [measurements, processNoise, measurementNoise])
+  //     setS(newS)
+  //     setEstimates(estimates.concat(newEstimates))
+  //   }
+  // }, [measurements, processNoise, measurementNoise])
 
   return (
     <div
@@ -169,21 +165,21 @@ export function Chart(props: ChartProps) {
         </Button>
 
         <div className="ml-4 mr-4 flex items-center">
-          <div className="w-36 mx-4">
+          <div className="w-40 mx-4">
             <Typography variant="caption">
               Q (processo): {processNoise}
             </Typography>
             <Slider
               value={processNoise}
               min={0}
-              max={1}
+              max={2}
               step={0.01}
               onChange={(_, v) => setProcessNoise(v as number)}
               size="small"
             />
           </div>
 
-          <div className="w-36">
+          {/* <div className="w-36">
             <Typography variant="caption">
               R (medição): {measurementNoise}
             </Typography>
@@ -195,7 +191,7 @@ export function Chart(props: ChartProps) {
               onChange={(_, v) => setMeasurementNoise(v as number)}
               size="small"
             />
-          </div>
+          </div> */}
         </div>
       </div>
 
@@ -227,17 +223,20 @@ export function Chart(props: ChartProps) {
                       10 ** Math.floor(Math.log10(dataMax - dataMin)) / 100
                     dataMin = Math.floor(dataMin / magnitude) * magnitude
                     dataMax = Math.ceil(dataMax / magnitude) * magnitude
-                    return [dataMin, dataMax]
+                    return [
+                      Number(dataMin.toPrecision(4)),
+                      Number(dataMax.toPrecision(4)),
+                    ]
                   }
                 : undefined
             }
-            tickFormatter={(value: number) => {
-              const valueString = value.toString()
-              if (valueString.length > 5) {
-                return value.toExponential(2)
-              }
-              return valueString
-            }}
+            // tickFormatter={(value: number) => {
+            //   const valueString = value.toString()
+            //   if (valueString.length > 5) {
+            //     return value.toExponential(2)
+            //   }
+            //   return valueString
+            // }}
           >
             <Label
               value={props.YAxis.name}
