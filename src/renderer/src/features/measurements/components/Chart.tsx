@@ -3,7 +3,16 @@ import ExpandRoundedIcon from '@mui/icons-material/ExpandRounded'
 import ScatterPlotRoundedIcon from '@mui/icons-material/ScatterPlotRounded'
 import ShowChartRoundedIcon from '@mui/icons-material/ShowChartRounded'
 import VerticalAlignBottomRoundedIcon from '@mui/icons-material/VerticalAlignBottomRounded'
-import { Button, IconButton, Slider, Typography } from '@mui/material'
+import {
+  Button,
+  IconButton,
+  Slider,
+  Typography,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+} from '@mui/material'
 import {
   CartesianGrid,
   Label,
@@ -37,43 +46,14 @@ export function Chart(props: ChartProps) {
     props.sensor.id,
     props.timeRange,
   )
-
-  const { estimates, model, setModel, processNoise, setProcessNoise } =
-    useEstimates(
-      measurements,
-      filterModels['constant-velocity'],
-      props.sensor,
-      0.5,
-    )
-
-  // const [processNoise, setProcessNoise] = useState<number>(0.5)
-  // const [measurementNoise, setMeasurementNoise] = useState<number>(0.5)
-  // const [model, setModel] = useState<ModelName>('constant-velocity')
-  // const params = useMemo(
-  //   () => getParams(model, processNoise, measurementNoise),
-  //   [model, processNoise, measurementNoise],
-  // )
-  // const [S, setS] = useState(getInitialState(params.order))
-
-  // useEffect(() => {
-  //   setS(getInitialState(params.order))
-  // }, [model, params.order])
-
-  // const [estimates, setEstimates] = useState<
-  //   { value: number; timestamp: number }[]
-  // >([])
-
-  // useEffect(() => {
-  //   if (measurements.length > estimates.length) {
-  //     const kf = new KalmanFilter1D(params, S)
-
-  //     const slice = measurements.slice(estimates.length)
-  //     const { S: newS, estimates: newEstimates } = kf.steps(slice)
-
-  //     setS(newS)
-  //     setEstimates(estimates.concat(newEstimates))
-  //   }
-  // }, [measurements, processNoise, measurementNoise])
+  const {
+    estimates,
+    setEstimates,
+    model,
+    setModel,
+    processNoise,
+    setProcessNoise,
+  } = useEstimates(measurements, props.sensor, 0.5)
 
   return (
     <div
@@ -169,6 +149,40 @@ export function Chart(props: ChartProps) {
         </Button>
 
         <div className="ml-4 mr-4 flex items-center">
+          <FormControl size="small" className="w-44">
+            <InputLabel id={`model-select-label-${props.sensor.id}`}>
+              Modelo
+            </InputLabel>
+            <Select
+              labelId={`model-select-label-${props.sensor.id}`}
+              value={model ? model.name : 'none'}
+              label="Modelo"
+              className="rounded-full"
+              sx={{
+                borderRadius: '9999px',
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderRadius: '9999px',
+                },
+                '& .MuiSelect-select': {
+                  borderRadius: '9999px',
+                },
+              }}
+              onChange={(e) => {
+                const val = e.target.value as string
+                if (val === 'none') return setModel(null)
+                const fm = filterModels[val]
+                if (fm) setModel(fm)
+              }}
+            >
+              <MenuItem value="none">Nenhum</MenuItem>
+              {Object.values(filterModels).map((fm) => (
+                <MenuItem key={fm.name} value={fm.name}>
+                  {fm.label}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
           <div className="w-40 mx-4">
             <Typography variant="caption">
               Q (processo): {processNoise}
@@ -178,7 +192,10 @@ export function Chart(props: ChartProps) {
               min={0}
               max={2}
               step={0.01}
-              onChange={(_, v) => setProcessNoise(v as number)}
+              onChange={(_, v) => {
+                setProcessNoise(v as number)
+                setEstimates([])
+              }}
               size="small"
             />
           </div>
