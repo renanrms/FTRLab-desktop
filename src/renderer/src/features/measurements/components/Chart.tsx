@@ -1,5 +1,3 @@
-import { useEffect, useMemo, useState } from 'react'
-
 import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined'
 import ExpandRoundedIcon from '@mui/icons-material/ExpandRounded'
 import ScatterPlotRoundedIcon from '@mui/icons-material/ScatterPlotRounded'
@@ -24,6 +22,7 @@ import { Sensor } from '@shared/types/Device'
 import { useChartControls } from '../hooks/useChartControls'
 import { useEstimates } from '../hooks/useEstimates'
 import { useSensorMeasurements } from '../hooks/useSensorMeasurements'
+import { filterModels } from '../services/KalmanFilter'
 interface ChartProps {
   className?: string
   XAxis: { key: string; name: string }
@@ -40,7 +39,12 @@ export function Chart(props: ChartProps) {
   )
 
   const { estimates, model, setModel, processNoise, setProcessNoise } =
-    useEstimates(measurements, 'constant-velocity', props.sensor, 0.5)
+    useEstimates(
+      measurements,
+      filterModels['constant-velocity'],
+      props.sensor,
+      0.5,
+    )
 
   // const [processNoise, setProcessNoise] = useState<number>(0.5)
   // const [measurementNoise, setMeasurementNoise] = useState<number>(0.5)

@@ -64,8 +64,6 @@ export class KalmanFilter1D {
       multiply(K, subtract([[z]], multiply(this.H, Se.x))),
     ) // Updated state estimate
 
-    console.log({ K, Se, xEstimate, pEstimate })
-
     // mathjs may return DenseMatrix objects. Convert to plain arrays so calling
     // code can safely use xK[0][0] indexing.
     const xOut =
