@@ -33,8 +33,7 @@ export const filterModels: { [key: string]: FilterModel } = {
   },
 
   // States: [position, velocity]
-  // We consider a process additive noise on acceleration.
-  // TODO: Testar ruído aditivo em todas as componentes do estado.
+  // We consider a process additive noise on position, velocity and acceleration.
   'constant-velocity': {
     label: 'Velocidade constante',
     name: 'constant-velocity',
@@ -45,16 +44,9 @@ export const filterModels: { [key: string]: FilterModel } = {
         [1, dt],
         [0, 1],
       ],
-      Q: (dt: number) => {
-        const q = processNoise
-        return multiply(
-          q,
-          // Teste 1: matriz de covariância do modelo de movimento Browniano (Wiener) integrado duas vezes
-          // [
-          //   [dt ** 4 / 4, dt ** 3 / 2],
-          //   [dt ** 3 / 2, dt ** 2],
-          // ],
-
+      Q: (dt: number) =>
+        multiply(
+          processNoise,
           // Teste 2: considerando ruídos aditivos em todas as componentes do estado
           add(
             [
@@ -72,8 +64,29 @@ export const filterModels: { [key: string]: FilterModel } = {
               ],
             ),
           ),
-        ) as number[][]
-      },
+        ) as number[][],
+      H: [[1, 0]],
+      R: [[measurementNoise]],
+    }),
+  },
+
+  // States: [position, velocity]
+  // We consider a process additive noise on acceleration.
+  'constant-velocity-strict': {
+    label: 'Velocidade constante (estrita)',
+    name: 'constant-velocity-strict',
+    type: 'kalman-filter',
+    getParams: (processNoise: number, measurementNoise: number) => ({
+      order: 2,
+      F: (dt: number) => [
+        [1, dt],
+        [0, 1],
+      ],
+      Q: (dt: number) =>
+        multiply(processNoise, [
+          [dt ** 4 / 4, dt ** 3 / 2],
+          [dt ** 3 / 2, dt ** 2],
+        ]) as number[][],
       H: [[1, 0]],
       R: [[measurementNoise]],
     }),
@@ -93,14 +106,51 @@ export const filterModels: { [key: string]: FilterModel } = {
         [0, 1, dt],
         [0, 0, 1],
       ],
-      Q: (dt: number) => {
-        const q = processNoise
-        return [
-          [(dt ** 5 / 20) * q, (dt ** 4 / 8) * q, (dt ** 3 / 6) * q],
-          [(dt ** 4 / 8) * q, (dt ** 3 / 3) * q, (dt ** 2 / 2) * q],
-          [(dt ** 3 / 6) * q, (dt ** 2 / 2) * q, dt * q],
-        ]
-      },
+      Q: (dt: number) =>
+        multiply(
+          processNoise,
+          add(
+            [
+              [dt ** 5 / 20, dt ** 4 / 8, dt ** 3 / 6],
+              [dt ** 4 / 8, dt ** 3 / 3, dt ** 2 / 2],
+              [dt ** 3 / 6, dt ** 2 / 2, dt],
+            ],
+            [
+              [dt ** 3 / 3, dt ** 2 / 2, 0],
+              [dt ** 2 / 2, dt, 0],
+              [0, 0, 0],
+            ],
+            [
+              [dt, 0, 0],
+              [0, 0, 0],
+              [0, 0, 0],
+            ],
+          ),
+        ) as number[][],
+      H: [[1, 0, 0]],
+      R: [[measurementNoise]],
+    }),
+  },
+
+  // States: [position, velocity, acceleration]
+  // We consider a process additive noise on acceleration derivate.
+  'constant-acceleration-strict': {
+    label: 'Aceleração constante (estrita)',
+    name: 'constant-acceleration-strict',
+    type: 'kalman-filter',
+    getParams: (processNoise: number, measurementNoise: number) => ({
+      order: 3,
+      F: (dt: number) => [
+        [1, dt, 0.5 * dt * dt],
+        [0, 1, dt],
+        [0, 0, 1],
+      ],
+      Q: (dt: number) =>
+        multiply(processNoise, [
+          [dt ** 5 / 20, dt ** 4 / 8, dt ** 3 / 6],
+          [dt ** 4 / 8, dt ** 3 / 3, dt ** 2 / 2],
+          [dt ** 3 / 6, dt ** 2 / 2, dt],
+        ]) as number[][],
       H: [[1, 0, 0]],
       R: [[measurementNoise]],
     }),
