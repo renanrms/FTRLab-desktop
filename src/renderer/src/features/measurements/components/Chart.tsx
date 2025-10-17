@@ -55,6 +55,10 @@ export function Chart(props: ChartProps) {
     setModel,
     processNoise,
     setProcessNoise,
+    w,
+    setW,
+    x0,
+    setX0,
   } = useEstimates(measurements, props.sensor, 0.5)
 
   return (
@@ -203,6 +207,40 @@ export function Chart(props: ChartProps) {
               size="small"
             />
           </div>
+
+          {model && model.name === 'reparatory' && (
+            <>
+              <div className="w-40 mr-6">
+                <Typography variant="caption">w: {w}</Typography>
+                <Slider
+                  value={w}
+                  min={0}
+                  max={100}
+                  step={0.1}
+                  onChange={(_, v) => {
+                    setW(v as number)
+                    clearEstimates()
+                  }}
+                  size="small"
+                />
+              </div>
+
+              <div className="w-40 mr-6">
+                <Typography variant="caption">x0: {x0}</Typography>
+                <Slider
+                  value={x0}
+                  min={0}
+                  max={100}
+                  step={0.1}
+                  onChange={(_, v) => {
+                    setX0(v as number)
+                    clearEstimates()
+                  }}
+                  size="small"
+                />
+              </div>
+            </>
+          )}
 
           {/* <div className="w-36">
             <Typography variant="caption">

@@ -11,6 +11,7 @@ export interface KalmanFilterState {
 export interface KalmanFilterParams {
   order: number
   F: (dt: number) => number[][]
+  G: (dt: number) => number[][]
   Q: (dt: number) => number[][]
   H: number[][]
   R: number[][]
@@ -19,6 +20,7 @@ export interface KalmanFilterParams {
 export class KalmanFilter1D {
   order: number
   F: KalmanFilterParams['F']
+  G: KalmanFilterParams['G']
   Q: KalmanFilterParams['Q']
   H: KalmanFilterParams['H']
   R: KalmanFilterParams['R']
@@ -27,6 +29,7 @@ export class KalmanFilter1D {
   constructor(params: KalmanFilterParams, initialState: KalmanFilterState) {
     this.order = params.order
     this.F = params.F
+    this.G = params.G
     this.Q = params.Q
     this.H = params.H
     this.R = params.R
@@ -39,7 +42,7 @@ export class KalmanFilter1D {
     const Q = this.Q(dt)
 
     // Predição do estado
-    const x = multiply(F, this.S.x)
+    const x = add(multiply(F, this.S.x), this.G(dt))
     const P = add(multiply(multiply(F, this.S.P), transpose(F)), Q)
 
     return { x, P, t }

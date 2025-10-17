@@ -17,9 +17,12 @@ export function useEstimates(
   const [processNoise, setProcessNoise] = useState<number>(processNoiseInit)
   const [measurementNoise] = useState<number>(0.5) // TODO: incluir esta propriedade no Sensor (variance/stdDev da medida)
   const [model, setModelState] = useState<FilterModel | null>(null)
+  const [w, setW] = useState<number>(1)
+  const [x0, setX0] = useState<number>(0)
   const params = useMemo(
-    () => (model ? model.getParams(processNoise, measurementNoise) : null),
-    [model, processNoise, measurementNoise],
+    () =>
+      model ? model.getParams(processNoise, measurementNoise, w, x0) : null,
+    [model, processNoise, measurementNoise, w, x0],
   )
   const [S, setS] = useState(() =>
     params ? getInitialState(params.order) : null,
@@ -121,6 +124,10 @@ export function useEstimates(
     processNoise,
     setProcessNoise,
     kalmanFilter,
+    w,
+    setW,
+    x0,
+    setX0,
     S,
     model,
     setModel: (m: FilterModel | null) => {
