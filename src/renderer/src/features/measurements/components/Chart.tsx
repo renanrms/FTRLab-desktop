@@ -48,7 +48,9 @@ export function Chart(props: ChartProps) {
   )
   const {
     estimates,
-    setEstimates,
+    estimatesD1,
+    estimatesD2,
+    clearEstimates,
     model,
     setModel,
     processNoise,
@@ -135,7 +137,7 @@ export function Chart(props: ChartProps) {
 
         <Button
           variant="outlined"
-          className="h-[40px] rounded-full capitalize border bg-neutral-98 dark:bg-neutral-20 border-neutral-95 hover:bg-neutral-95 dark:hover:bg-neutral-30 text-primary-60 dark:text-primary-70 dark:border-neutral-30"
+          className="h-[40px] mr-6 rounded-full capitalize border bg-neutral-98 dark:bg-neutral-20 border-neutral-95 hover:bg-neutral-95 dark:hover:bg-neutral-30 text-primary-60 dark:text-primary-70 dark:border-neutral-30"
           title="Exportar medidas"
           onClick={() => {
             window.api.measurements.export({
@@ -148,16 +150,16 @@ export function Chart(props: ChartProps) {
           <span className="mx-2">Exportar</span>
         </Button>
 
-        <div className="ml-4 mr-4 flex items-center">
-          <FormControl size="small" className="w-44">
+        <div className="mr-6 flex items-center">
+          <FormControl size="small" className="w-44 mr-4 text-sm">
             <InputLabel id={`model-select-label-${props.sensor.id}`}>
-              Modelo
+              Filtro
             </InputLabel>
             <Select
               labelId={`model-select-label-${props.sensor.id}`}
               value={model ? model.name : 'none'}
-              label="Modelo"
-              className="rounded-full"
+              label="Filtro"
+              className="rounded-full text-sm"
               sx={{
                 borderRadius: '9999px',
                 '& .MuiOutlinedInput-notchedOutline': {
@@ -174,27 +176,29 @@ export function Chart(props: ChartProps) {
                 if (fm) setModel(fm)
               }}
             >
-              <MenuItem value="none">Nenhum</MenuItem>
+              <MenuItem className="text-sm" value="none">
+                Nenhum
+              </MenuItem>
               {Object.values(filterModels).map((fm) => (
-                <MenuItem key={fm.name} value={fm.name}>
+                <MenuItem className="text-sm" key={fm.name} value={fm.name}>
                   {fm.label}
                 </MenuItem>
               ))}
             </Select>
           </FormControl>
 
-          <div className="w-40 mx-4">
+          <div className="w-40 mr-6">
             <Typography variant="caption">
               Q (processo): {processNoise}
             </Typography>
             <Slider
               value={processNoise}
               min={0}
-              max={2}
-              step={0.01}
+              max={10}
+              step={0.1}
               onChange={(_, v) => {
                 setProcessNoise(v as number)
-                setEstimates([])
+                clearEstimates()
               }}
               size="small"
             />
@@ -251,13 +255,6 @@ export function Chart(props: ChartProps) {
                   }
                 : undefined
             }
-            // tickFormatter={(value: number) => {
-            //   const valueString = value.toString()
-            //   if (valueString.length > 5) {
-            //     return value.toExponential(2)
-            //   }
-            //   return valueString
-            // }}
           >
             <Label
               value={props.YAxis.name}
@@ -296,6 +293,18 @@ export function Chart(props: ChartProps) {
             fill="var(--md-ref-palette-error70)"
             // stroke="var(--md-ref-palette-tertiary50)"
             // fill="var(--md-ref-palette-tertiary70)"
+            isAnimationActive={false}
+          />
+          <Line
+            type="monotone"
+            dataKey={props.YAxis.key}
+            data={estimatesD1}
+            name={props.YAxis.name}
+            dot={chartControls.showPoints}
+            strokeWidth={2}
+            strokeDasharray={chartControls.showLines ? undefined : '0 5'}
+            stroke="var(--md-ref-palette-tertiary50)"
+            fill="var(--md-ref-palette-tertiary70)"
             isAnimationActive={false}
           />
         </LineChart>

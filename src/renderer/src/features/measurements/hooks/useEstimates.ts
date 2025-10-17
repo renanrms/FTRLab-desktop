@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { Sensor } from '@shared/types/Device'
-import { Measurement } from '@shared/types/Measurement'
+import { Measure, Measurement } from '@shared/types/Measurement'
 
 import {
   getInitialState,
@@ -12,7 +12,7 @@ import {
 export function useEstimates(
   measurements: Measurement[],
   sensor: Sensor,
-  processNoiseInit = 0.5,
+  processNoiseInit = 1,
 ) {
   const [processNoise, setProcessNoise] = useState<number>(processNoiseInit)
   const [measurementNoise] = useState<number>(0.5) // TODO: incluir esta propriedade no Sensor (variance/stdDev da medida)
@@ -42,29 +42,38 @@ export function useEstimates(
     kfRef.current = new KalmanFilter1D(params, initial)
   }, [model, params])
 
-  const [estimates, setEstimates] = useState<
-    { value: number; timestamp: number }[]
-  >([])
+  const [estimates, setEstimates] = useState<Measure[]>([])
+  const [estimatesD1, setEstimatesD1] = useState<Measure[]>([])
+  const [estimatesD2, setEstimatesD2] = useState<Measure[]>([])
+
+  const clearEstimates = () => {
+    setEstimates([])
+    setEstimatesD1([])
+    setEstimatesD2([])
+  }
 
   const kalmanFilter = kfRef.current
 
   useEffect(() => {
     if (!params || !kfRef.current || measurements.length === 0) {
-      setEstimates([])
+      clearEstimates()
       return
     }
 
     const start = measurements[0].timestamp
-
     const startIndex = estimates.findIndex((s) => s.timestamp === start)
-    const remainingEstimates =
-      startIndex >= 0 ? estimates.slice(startIndex) : []
 
-    if (measurements.length > remainingEstimates.length) {
-      const newMeasurements = measurements.slice(remainingEstimates.length)
+    const remaining = startIndex !== -1 ? estimates.slice(startIndex) : []
+    const remainingD1 = startIndex !== -1 ? estimatesD1.slice(startIndex) : []
+    const remainingD2 = startIndex !== -1 ? estimatesD2.slice(startIndex) : []
+
+    if (measurements.length > remaining.length) {
+      const newMeasurements = measurements.slice(remaining.length)
 
       const firstNewMeasurement = newMeasurements[0]
       const lastEstimate = estimates.at(-1)
+
+      // Verify if new measurements are not older than last estimate. If so, reset all.
       if (
         lastEstimate &&
         firstNewMeasurement.timestamp < lastEstimate.timestamp
@@ -73,18 +82,25 @@ export function useEstimates(
           `New measurement timestamp ${firstNewMeasurement.timestamp} is older than last estimate timestamp ${lastEstimate.timestamp}. Resetting estimates.`,
         )
         setS(getInitialState(params.order))
-        setEstimates([])
+        clearEstimates()
         return
       }
 
-      const { S: newS, estimates: newEstimates } =
-        kfRef.current!.steps(newMeasurements)
+      // Predict and Estimate state
+      const {
+        S: newS,
+        estimates: newEstimates,
+        estimatesD1: newEstimatesD1,
+        estimatesD2: newEstimatesD2,
+      } = kfRef.current!.steps(newMeasurements)
 
       // update refs synchronously, then update state
       sRef.current = newS
       kfRef.current = new KalmanFilter1D(params, newS)
       setS(newS)
-      setEstimates(remainingEstimates.concat(newEstimates))
+      setEstimates(remaining.concat(newEstimates))
+      setEstimatesD1(remainingD1.concat(newEstimatesD1 || []))
+      setEstimatesD2(remainingD2.concat(newEstimatesD2 || []))
     }
   }, [
     measurements,
@@ -93,11 +109,19 @@ export function useEstimates(
     params,
     kalmanFilter,
     estimates,
+    estimatesD1,
+    estimatesD2,
   ])
 
   return {
     estimates,
-    setEstimates,
+    estimatesD1,
+    estimatesD2,
+    clearEstimates,
+    processNoise,
+    setProcessNoise,
+    kalmanFilter,
+    S,
     model,
     setModel: (m: FilterModel | null) => {
       // synchronous swap: reset KF refs immediately then update state
@@ -106,7 +130,7 @@ export function useEstimates(
         sRef.current = null
         setS(null)
         setModelState(null)
-        setEstimates([])
+        clearEstimates()
         return
       }
 
@@ -116,11 +140,7 @@ export function useEstimates(
       sRef.current = initial
       setS(initial)
       setModelState(m)
-      setEstimates([])
+      clearEstimates()
     },
-    processNoise,
-    setProcessNoise,
-    kalmanFilter,
-    S,
   }
 }

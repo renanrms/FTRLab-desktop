@@ -1,6 +1,6 @@
 import { add, identity, inv, multiply, subtract, transpose } from 'mathjs'
 
-import { Measurement } from '@shared/types/Measurement'
+import { Measure } from '@shared/types/Measurement'
 
 export interface KalmanFilterState {
   x: number[][]
@@ -81,22 +81,46 @@ export class KalmanFilter1D {
   step(
     t: number,
     z: number,
-  ): { S: KalmanFilterState; estimate: Omit<Measurement, 'sensorId'> } {
+  ): {
+    S: KalmanFilterState
+    estimate: Measure
+    estimateD1?: Measure
+    estimateD2?: Measure
+  } {
     const Se = this.predict(t)
     this.S = this.estimate(t, z, Se)
 
-    return { S: this.S, estimate: { value: this.S.x[0][0], timestamp: t } }
+    return {
+      S: this.S,
+      estimate: { value: this.S.x[0][0], timestamp: t },
+      estimateD1: { value: this.S.x[1]?.[0], timestamp: t },
+      estimateD2: { value: this.S.x[2]?.[0], timestamp: t },
+    }
   }
 
-  steps(measurements: Omit<Measurement, 'sensorId'>[]): {
+  steps(measurements: Measure[]): {
     S: KalmanFilterState
-    estimates: Omit<Measurement, 'sensorId'>[]
+    estimates: Measure[]
+    estimatesD1?: Measure[]
+    estimatesD2?: Measure[]
   } {
-    const estimates: Omit<Measurement, 'sensorId'>[] = []
+    const estimates: Measure[] = []
+    const estimatesD1 = [] as Measure[]
+    const estimatesD2 = [] as Measure[]
     measurements.forEach((m) => {
-      const { estimate } = this.step(m.timestamp, m.value)
+      const { estimate, estimateD1, estimateD2 } = this.step(
+        m.timestamp,
+        m.value,
+      )
       estimates.push(estimate)
+      estimateD1 && estimatesD1.push(estimateD1)
+      estimateD2 && estimatesD2.push(estimateD2)
     })
-    return { S: this.S, estimates }
+    return {
+      S: this.S,
+      estimates,
+      estimatesD1: estimatesD1.length !== 0 ? estimatesD1 : undefined,
+      estimatesD2: estimatesD2.length !== 0 ? estimatesD2 : undefined,
+    }
   }
 }
