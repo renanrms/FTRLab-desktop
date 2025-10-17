@@ -48,8 +48,8 @@ export function Chart(props: ChartProps) {
   )
   const {
     estimates,
-    estimatesD1,
-    estimatesD2,
+    // estimatesD1,
+    // estimatesD2,
     clearEstimates,
     model,
     setModel,
@@ -295,7 +295,7 @@ export function Chart(props: ChartProps) {
             // fill="var(--md-ref-palette-tertiary70)"
             isAnimationActive={false}
           />
-          <Line
+          {/* <Line
             type="monotone"
             dataKey={props.YAxis.key}
             data={estimatesD1}
@@ -306,7 +306,7 @@ export function Chart(props: ChartProps) {
             stroke="var(--md-ref-palette-tertiary50)"
             fill="var(--md-ref-palette-tertiary70)"
             isAnimationActive={false}
-          />
+          /> */}
         </LineChart>
       </ResponsiveContainer>
     </div>
