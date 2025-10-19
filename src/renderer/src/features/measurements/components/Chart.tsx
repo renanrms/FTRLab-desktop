@@ -198,7 +198,7 @@ export function Chart(props: ChartProps) {
             <Slider
               value={processNoise}
               min={0}
-              max={10}
+              max={30}
               step={0.1}
               onChange={(_, v) => {
                 setProcessNoise(v as number)
@@ -210,12 +210,12 @@ export function Chart(props: ChartProps) {
 
           {model && model.name === 'reparatory' && (
             <>
-              <div className="w-40 mr-6">
+              <div className="w-32 mr-6">
                 <Typography variant="caption">w: {w}</Typography>
                 <Slider
                   value={w}
                   min={0}
-                  max={100}
+                  max={20}
                   step={0.1}
                   onChange={(_, v) => {
                     setW(v as number)
@@ -225,7 +225,7 @@ export function Chart(props: ChartProps) {
                 />
               </div>
 
-              <div className="w-40 mr-6">
+              <div className="w-32 mr-6">
                 <Typography variant="caption">x0: {x0}</Typography>
                 <Slider
                   value={x0}

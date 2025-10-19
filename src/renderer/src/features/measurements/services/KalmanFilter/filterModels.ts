@@ -50,25 +50,20 @@ export const filterModels: { [key: string]: FilterModel } = {
       ],
       G: (dt: number) => [[0], [0]],
       Q: (dt: number) =>
-        multiply(
-          processNoise,
-          // Teste 2: considerando ruídos aditivos em todas as componentes do estado
-          add(
-            [
-              [dt ** 4 / 4, dt ** 3 / 2],
-              [dt ** 3 / 2, dt ** 2],
-            ],
-            add(
-              [
-                [dt ** 2 / 2, dt],
-                [dt, 1],
-              ],
-              [
-                [dt, 1],
-                [1, 0],
-              ],
-            ),
-          ),
+        // Teste 2: considerando ruídos aditivos em todas as componentes do estado
+        add(
+          multiply(0.5 * processNoise, [
+            [dt ** 4 / 4, dt ** 3 / 2],
+            [dt ** 3 / 2, dt ** 2],
+          ]),
+          multiply(0.3 * processNoise, [
+            [dt ** 2 / 2, dt],
+            [dt, 1],
+          ]),
+          multiply(0.2 * processNoise, [
+            [dt, 1],
+            [1, 0],
+          ]),
         ) as number[][],
       H: [[1, 0]],
       R: [[measurementNoise]],
@@ -114,25 +109,22 @@ export const filterModels: { [key: string]: FilterModel } = {
       ],
       G: (dt: number) => [[0], [0], [0]],
       Q: (dt: number) =>
-        multiply(
-          processNoise,
-          add(
-            [
-              [dt ** 5 / 20, dt ** 4 / 8, dt ** 3 / 6],
-              [dt ** 4 / 8, dt ** 3 / 3, dt ** 2 / 2],
-              [dt ** 3 / 6, dt ** 2 / 2, dt],
-            ],
-            [
-              [dt ** 3 / 3, dt ** 2 / 2, 0],
-              [dt ** 2 / 2, dt, 0],
-              [0, 0, 0],
-            ],
-            [
-              [dt, 0, 0],
-              [0, 0, 0],
-              [0, 0, 0],
-            ],
-          ),
+        add(
+          multiply(0.5 * processNoise, [
+            [dt ** 5 / 20, dt ** 4 / 8, dt ** 3 / 6],
+            [dt ** 4 / 8, dt ** 3 / 3, dt ** 2 / 2],
+            [dt ** 3 / 6, dt ** 2 / 2, dt],
+          ]),
+          multiply(0.3 * processNoise, [
+            [dt ** 3 / 3, dt ** 2 / 2, 0],
+            [dt ** 2 / 2, dt, 0],
+            [0, 0, 0],
+          ]),
+          multiply(0.2 * processNoise, [
+            [dt, 0, 0],
+            [0, 0, 0],
+            [0, 0, 0],
+          ]),
         ) as number[][],
       H: [[1, 0, 0]],
       R: [[measurementNoise]],
@@ -184,25 +176,22 @@ export const filterModels: { [key: string]: FilterModel } = {
       ],
       G: (dt: number) => [[0], [x0 * w * dt], [0]],
       Q: (dt: number) =>
-        multiply(
-          processNoise,
-          add(
-            [
-              [dt ** 5 / 20, dt ** 4 / 8, dt ** 3 / 6],
-              [dt ** 4 / 8, dt ** 3 / 3, dt ** 2 / 2],
-              [dt ** 3 / 6, dt ** 2 / 2, dt],
-            ],
-            [
-              [dt ** 3 / 3, dt ** 2 / 2, 0],
-              [dt ** 2 / 2, dt, 0],
-              [0, 0, 0],
-            ],
-            [
-              [dt, 0, 0],
-              [0, 0, 0],
-              [0, 0, 0],
-            ],
-          ),
+        add(
+          multiply(0.5 * processNoise, [
+            [dt ** 5 / 20, dt ** 4 / 8, dt ** 3 / 6],
+            [dt ** 4 / 8, dt ** 3 / 3, dt ** 2 / 2],
+            [dt ** 3 / 6, dt ** 2 / 2, dt],
+          ]),
+          multiply(0.3 * processNoise, [
+            [dt ** 3 / 3, dt ** 2 / 2, 0],
+            [dt ** 2 / 2, dt, 0],
+            [0, 0, 0],
+          ]),
+          multiply(0.2 * processNoise, [
+            [dt, 0, 0],
+            [0, 0, 0],
+            [0, 0, 0],
+          ]),
         ) as number[][],
       H: [[1, 0, 0]],
       R: [[measurementNoise]],

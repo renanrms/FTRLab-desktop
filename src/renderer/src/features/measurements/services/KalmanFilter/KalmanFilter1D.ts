@@ -1,4 +1,12 @@
-import { add, identity, inv, multiply, subtract, transpose } from 'mathjs'
+import {
+  add,
+  identity,
+  inv,
+  MathCollection,
+  multiply,
+  subtract,
+  transpose,
+} from 'mathjs'
 
 import { Measure } from '@shared/types/Measurement'
 
@@ -50,17 +58,23 @@ export class KalmanFilter1D {
 
   estimate(t: number, z: number, Se: KalmanFilterState): KalmanFilterState {
     const K = multiply(
-      multiply(Se.P, transpose(this.H)),
-      inv(add(multiply(multiply(this.H, Se.P), transpose(this.H)), this.R)),
-    ) // Kalman Gain
+      Se.P,
+      transpose(this.H),
+      inv(
+        add(
+          multiply(this.H, Se.P, transpose(this.H)) as MathCollection,
+          this.R,
+        ),
+      ),
+    ) as MathCollection // Kalman Gain
 
     const aux = subtract(
       identity(this.order),
       multiply(K, this.H),
     ) as number[][]
     const pEstimate = add(
-      multiply(multiply(aux, Se.P), transpose(aux)),
-      multiply(multiply(K, this.R), transpose(K)),
+      multiply(aux, Se.P, transpose(aux)),
+      multiply(K, this.R, transpose(K)),
     ) // Updated estimate covariance
     const xEstimate = add(
       Se.x,
