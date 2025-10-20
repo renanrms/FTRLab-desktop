@@ -13,6 +13,7 @@ import {
   Select,
   MenuItem,
 } from '@mui/material'
+import { TrendingUp } from 'lucide-react'
 import {
   CartesianGrid,
   Label,
@@ -52,7 +53,7 @@ export function Chart(props: ChartProps) {
   )
   const {
     estimates,
-    // estimatesD1,
+    estimatesD1,
     // estimatesD2,
     clearEstimates,
     model,
@@ -72,218 +73,226 @@ export function Chart(props: ChartProps) {
         props.className,
       )}
     >
-      <div className="mb-2 ml-20 flex items-center">
-        {/* <div className="rounded-full bg-neutral-98 dark:bg-neutral-20 border border-neutral-95 dark:border-neutral-30 flex items-center mr-4">
-          <IconButton>
-            <VerticalAlignBottomRoundedIcon
-              sx={{
-                fontSize: '22px',
-                transform: 'rotate(-90deg)',
-              }}
+      <div className="mb-2 ml-20 flex items-center flex-wrap">
+        <div className="flex items-center">
+          {/* <div className="rounded-full bg-neutral-98 dark:bg-neutral-20 border border-neutral-95 dark:border-neutral-30 flex items-center mr-4">
+              <IconButton>
+                <VerticalAlignBottomRoundedIcon
+                  sx={{
+                    fontSize: '22px',
+                    transform: 'rotate(-90deg)',
+                  }}
+                  />
+                </IconButton>
+
+                <IconButton>
+                <ExpandRoundedIcon
+                sx={{
+                    fontSize: '22px',
+                    transform: 'rotate(90deg)',
+                  }}
+                />
+              </IconButton>
+          </div> */}
+          <div className="rounded-full bg-neutral-98 dark:bg-neutral-20 border border-neutral-95 dark:border-neutral-30 flex items-center mr-4">
+            <IconButton onClick={chartControls.showFromOriginYHandleClick}>
+              <VerticalAlignBottomRoundedIcon
+                className={twMerge(
+                  'rotate-180',
+                  chartControls.showFromOriginY
+                    ? 'text-primary-60 dark:text-primary-70'
+                    : 'dark:text-neutral-80',
+                )}
+                color="inherit"
+                sx={{ fontSize: '22px' }}
               />
             </IconButton>
 
-            <IconButton>
-            <ExpandRoundedIcon
-            sx={{
-                fontSize: '22px',
-                transform: 'rotate(90deg)',
-              }}
-            />
-          </IconButton>
-        </div> */}
-        <div className="rounded-full bg-neutral-98 dark:bg-neutral-20 border border-neutral-95 dark:border-neutral-30 flex items-center mr-6">
-          <IconButton onClick={chartControls.ShowFromOriginYHandleClick}>
-            <VerticalAlignBottomRoundedIcon
-              className={twMerge(
-                'rotate-180',
-                chartControls.ShowFromOriginY
-                  ? 'text-primary-60 dark:text-primary-70'
-                  : 'dark:text-neutral-80',
-              )}
-              color="inherit"
-              sx={{ fontSize: '22px' }}
-            />
-          </IconButton>
+            <IconButton onClick={chartControls.showExpandedYHandleClick}>
+              <ExpandRoundedIcon
+                className={twMerge(
+                  chartControls.showExpandedY
+                    ? 'text-primary-60 dark:text-primary-70'
+                    : 'dark:text-neutral-80',
+                )}
+                color="inherit"
+                sx={{ fontSize: '22px' }}
+              />
+            </IconButton>
+          </div>
+          <div className="rounded-full bg-neutral-98 dark:bg-neutral-20 border border-neutral-95 dark:border-neutral-30 flex items-center mr-4">
+            <IconButton onClick={chartControls.showPointsHandleClick}>
+              <ScatterPlotRoundedIcon
+                className={twMerge(
+                  chartControls.showPoints
+                    ? 'text-primary-60 dark:text-primary-70'
+                    : 'dark:text-neutral-80',
+                )}
+                color="inherit"
+                sx={{ fontSize: '22px' }}
+              />
+            </IconButton>
 
-          <IconButton onClick={chartControls.showExpandedYHandleClick}>
-            <ExpandRoundedIcon
-              className={twMerge(
-                chartControls.showExpandedY
-                  ? 'text-primary-60 dark:text-primary-70'
-                  : 'dark:text-neutral-80',
-              )}
-              color="inherit"
-              sx={{ fontSize: '22px' }}
-            />
-          </IconButton>
-        </div>
-        <div className="rounded-full bg-neutral-98 dark:bg-neutral-20 border border-neutral-95 dark:border-neutral-30 flex items-center mr-6">
-          <IconButton onClick={chartControls.showPointsHandleClick}>
-            <ScatterPlotRoundedIcon
-              className={twMerge(
-                chartControls.showPoints
-                  ? 'text-primary-60 dark:text-primary-70'
-                  : 'dark:text-neutral-80',
-              )}
-              color="inherit"
-              sx={{ fontSize: '22px' }}
-            />
-          </IconButton>
-
-          <IconButton onClick={chartControls.showLinesHandleClick}>
-            <ShowChartRoundedIcon
-              className={twMerge(
-                chartControls.showLines
-                  ? 'text-primary-60 dark:text-primary-70'
-                  : 'dark:text-neutral-80',
-              )}
-              sx={{ fontSize: '22px' }}
-            />
-          </IconButton>
-        </div>
-
-        <Button
-          variant="outlined"
-          className="h-[40px] mr-6 rounded-full capitalize border bg-neutral-98 dark:bg-neutral-20 border-neutral-95 hover:bg-neutral-95 dark:hover:bg-neutral-30 text-primary-60 dark:text-primary-70 dark:border-neutral-30"
-          title="Exportar medidas"
-          onClick={async () => {
-            // fetch full measurements from main process
-            const resp = await window.api.measurements.getRange({
-              sensorId: props.sensor.id,
-              start: undefined,
-              end: undefined,
-            })
-            const fullMeasurements = resp.measurements
-
-            // generate estimates locally if model is selected
-            let estimates: any[] | undefined
-            if (model) {
-              const params = model.getParams(processNoise, 0.5, w, x0)
-              const initial = getInitialState(params.order)
-              const kf = new KalmanFilter1D(params, initial)
-              const { estimates: est } = kf.steps(fullMeasurements)
-              estimates = est
-            }
-
-            // send payload to main for export (main will use provided measurements/estimates)
-            window.api.measurements.export({
-              sensorId: props.sensor.id,
-              timeRange: props.timeRange,
-              measurements: fullMeasurements,
-              estimates,
-            })
-          }}
-        >
-          <DownloadOutlinedIcon sx={{ fontSize: '22px' }} />
-          <span className="mx-2">Exportar</span>
-        </Button>
-
-        <div className="mr-6 flex items-center">
-          <FormControl size="small" className="w-44 mr-4 text-sm">
-            <InputLabel id={`model-select-label-${props.sensor.id}`}>
-              Filtro
-            </InputLabel>
-            <Select
-              labelId={`model-select-label-${props.sensor.id}`}
-              value={model ? model.name : 'none'}
-              label="Filtro"
-              className="rounded-full text-sm"
-              sx={{
-                borderRadius: '9999px',
-                '& .MuiOutlinedInput-notchedOutline': {
-                  borderRadius: '9999px',
-                },
-                '& .MuiSelect-select': {
-                  borderRadius: '9999px',
-                },
-              }}
-              onChange={(e) => {
-                const val = e.target.value as string
-                if (val === 'none') return setModel(null)
-                const fm = filterModels[val]
-                if (fm) setModel(fm)
-              }}
-            >
-              <MenuItem className="text-sm" value="none">
-                Nenhum
-              </MenuItem>
-              {Object.values(filterModels).map((fm) => (
-                <MenuItem className="text-sm" key={fm.name} value={fm.name}>
-                  {fm.label}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          <div className="w-40 mr-6">
-            <Typography variant="caption">
-              Q (processo): {processNoise}
-            </Typography>
-            <Slider
-              value={processNoise}
-              min={0}
-              max={30}
-              step={0.1}
-              onChange={(_, v) => {
-                setProcessNoise(v as number)
-                clearEstimates()
-              }}
-              size="small"
-            />
+            <IconButton onClick={chartControls.showLinesHandleClick}>
+              <ShowChartRoundedIcon
+                className={twMerge(
+                  chartControls.showLines
+                    ? 'text-primary-60 dark:text-primary-70'
+                    : 'dark:text-neutral-80',
+                )}
+                sx={{ fontSize: '22px' }}
+              />
+            </IconButton>
           </div>
 
-          {model && model.name === 'reparatory' && (
-            <>
-              <div className="w-32 mr-6">
-                <Typography variant="caption">w: {w}</Typography>
-                <Slider
-                  value={w}
-                  min={0}
-                  max={20}
-                  step={0.1}
-                  onChange={(_, v) => {
-                    setW(v as number)
-                    clearEstimates()
-                  }}
-                  size="small"
-                />
-              </div>
+          <Button
+            variant="outlined"
+            className="h-[40px] mr-4 rounded-full capitalize border bg-neutral-98 dark:bg-neutral-20 border-neutral-95 hover:bg-neutral-95 dark:hover:bg-neutral-30 text-primary-60 dark:text-primary-70 dark:border-neutral-30"
+            title="Exportar medidas"
+            onClick={async () => {
+              // fetch full measurements from main process
+              const resp = await window.api.measurements.getRange({
+                sensorId: props.sensor.id,
+                start: undefined,
+                end: undefined,
+              })
+              const fullMeasurements = resp.measurements
 
-              <div className="w-32 mr-6">
-                <Typography variant="caption">x0: {x0}</Typography>
-                <Slider
-                  value={x0}
-                  min={0}
-                  max={100}
-                  step={0.1}
-                  onChange={(_, v) => {
-                    setX0(v as number)
-                    clearEstimates()
-                  }}
-                  size="small"
-                />
-              </div>
-            </>
-          )}
+              // generate estimates locally if model is selected
+              let estimates: any[] | undefined
+              if (model) {
+                const params = model.getParams(processNoise, 0.5, w, x0)
+                const initial = getInitialState(params.order)
+                const kf = new KalmanFilter1D(params, initial)
+                const { estimates: est } = kf.steps(fullMeasurements)
+                estimates = est
+              }
 
-          {/* <div className="w-36">
-            <Typography variant="caption">
-              R (medição): {measurementNoise}
-            </Typography>
-            <Slider
-              value={measurementNoise}
-              min={0}
-              max={10}
-              step={0.1}
-              onChange={(_, v) => setMeasurementNoise(v as number)}
-              size="small"
-            />
-          </div> */}
+              // send payload to main for export (main will use provided measurements/estimates)
+              window.api.measurements.export({
+                sensorId: props.sensor.id,
+                timeRange: props.timeRange,
+                measurements: fullMeasurements,
+                estimates,
+              })
+            }}
+          >
+            <DownloadOutlinedIcon sx={{ fontSize: '22px' }} />
+            <span className="mx-2">Exportar</span>
+          </Button>
+
+          <div className="mr-4 flex items-center">
+            <FormControl size="small" className="w-44 text-sm">
+              <InputLabel id={`model-select-label-${props.sensor.id}`}>
+                Filtro
+              </InputLabel>
+              <Select
+                labelId={`model-select-label-${props.sensor.id}`}
+                value={model ? model.name : 'none'}
+                label="Filtro"
+                className="rounded-full text-sm"
+                sx={{
+                  borderRadius: '9999px',
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderRadius: '9999px',
+                  },
+                  '& .MuiSelect-select': {
+                    borderRadius: '9999px',
+                  },
+                }}
+                onChange={(e) => {
+                  const val = e.target.value as string
+                  if (val === 'none') return setModel(null)
+                  const fm = filterModels[val]
+                  if (fm) setModel(fm)
+                }}
+              >
+                <MenuItem className="text-sm" value="none">
+                  Nenhum
+                </MenuItem>
+                {Object.values(filterModels).map((fm) => (
+                  <MenuItem className="text-sm" key={fm.name} value={fm.name}>
+                    {fm.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </div>
+
+          <div className="rounded-full bg-neutral-98 dark:bg-neutral-20 border border-neutral-95 dark:border-neutral-30 flex items-center mr-4">
+            <IconButton
+              onClick={chartControls.showDerivateHandleClick}
+              disabled={!model || model.name === 'constant-position'}
+            >
+              <TrendingUp
+                size={22}
+                className={twMerge(
+                  model &&
+                    model.name !== 'constant-position' &&
+                    chartControls.showDerivate
+                    ? 'text-primary-60 dark:text-primary-70'
+                    : 'dark:text-neutral-80',
+                )}
+              />
+            </IconButton>
+          </div>
         </div>
+
+        {model && (
+          <div className="flex items-center">
+            <div className="w-40 mr-4">
+              <Typography variant="caption">Q: {processNoise}</Typography>
+              <Slider
+                value={processNoise}
+                min={0}
+                max={30}
+                step={0.1}
+                onChange={(_, v) => {
+                  setProcessNoise(v as number)
+                  clearEstimates()
+                }}
+                size="small"
+              />
+            </div>
+
+            {model.name === 'reparatory' && (
+              <>
+                <div className="w-32 mr-4">
+                  <Typography variant="caption">w: {w}</Typography>
+                  <Slider
+                    value={w}
+                    min={0}
+                    max={20}
+                    step={0.1}
+                    onChange={(_, v) => {
+                      setW(v as number)
+                      clearEstimates()
+                    }}
+                    size="small"
+                  />
+                </div>
+
+                <div className="w-32 mr-4">
+                  <Typography variant="caption">x0: {x0}</Typography>
+                  <Slider
+                    value={x0}
+                    min={0}
+                    max={100}
+                    step={0.1}
+                    onChange={(_, v) => {
+                      setX0(v as number)
+                      clearEstimates()
+                    }}
+                    size="small"
+                  />
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
-      <ResponsiveContainer width="100%" height="100%" debounce={20}>
+      <ResponsiveContainer width="100%" height="87%" debounce={20}>
         <LineChart
           width={200}
           height={200}
@@ -358,18 +367,20 @@ export function Chart(props: ChartProps) {
             // fill="var(--md-ref-palette-tertiary70)"
             isAnimationActive={false}
           />
-          {/* <Line
-            type="monotone"
-            dataKey={props.YAxis.key}
-            data={estimatesD1}
-            name={props.YAxis.name}
-            dot={chartControls.showPoints}
-            strokeWidth={2}
-            strokeDasharray={chartControls.showLines ? undefined : '0 5'}
-            stroke="var(--md-ref-palette-tertiary50)"
-            fill="var(--md-ref-palette-tertiary70)"
-            isAnimationActive={false}
-          /> */}
+          {chartControls.showDerivate && (
+            <Line
+              type="monotone"
+              dataKey={props.YAxis.key}
+              data={estimatesD1}
+              name={props.YAxis.name}
+              dot={chartControls.showPoints}
+              strokeWidth={2}
+              strokeDasharray={chartControls.showLines ? undefined : '0 5'}
+              stroke="var(--md-ref-palette-tertiary50)"
+              fill="var(--md-ref-palette-tertiary70)"
+              isAnimationActive={false}
+            />
+          )}
         </LineChart>
       </ResponsiveContainer>
     </div>

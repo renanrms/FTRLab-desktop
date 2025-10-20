@@ -25,7 +25,7 @@ export function ChartContainer(props: ChartContainerProps) {
 
   return (
     <Chart
-      className="w-full h-[350px] m-2"
+      className="w-full h-[400px] m-2"
       XAxis={serie.XAxis}
       YAxis={serie.YAxis}
       sensor={props.sensor}
