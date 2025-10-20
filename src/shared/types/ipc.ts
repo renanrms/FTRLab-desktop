@@ -63,4 +63,8 @@ export interface UpdateDeviceSettingsRequest {
 export interface ExportMeasurementsRequest {
   sensorId: SensorId
   timeRange: number
+  // optional full data payload: if provided, main process will use these
+  // measurements and estimates instead of querying the DB.
+  measurements?: Measurement[]
+  estimates?: Measurement[]
 }

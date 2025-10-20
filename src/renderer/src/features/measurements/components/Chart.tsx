@@ -31,7 +31,11 @@ import { Sensor } from '@shared/types/Device'
 import { useChartControls } from '../hooks/useChartControls'
 import { useEstimates } from '../hooks/useEstimates'
 import { useSensorMeasurements } from '../hooks/useSensorMeasurements'
-import { filterModels } from '../services/KalmanFilter'
+import {
+  filterModels,
+  getInitialState,
+  KalmanFilter1D,
+} from '../services/KalmanFilter'
 interface ChartProps {
   className?: string
   XAxis: { key: string; name: string }
@@ -143,10 +147,31 @@ export function Chart(props: ChartProps) {
           variant="outlined"
           className="h-[40px] mr-6 rounded-full capitalize border bg-neutral-98 dark:bg-neutral-20 border-neutral-95 hover:bg-neutral-95 dark:hover:bg-neutral-30 text-primary-60 dark:text-primary-70 dark:border-neutral-30"
           title="Exportar medidas"
-          onClick={() => {
+          onClick={async () => {
+            // fetch full measurements from main process
+            const resp = await window.api.measurements.getRange({
+              sensorId: props.sensor.id,
+              start: undefined,
+              end: undefined,
+            })
+            const fullMeasurements = resp.measurements
+
+            // generate estimates locally if model is selected
+            let estimates: any[] | undefined
+            if (model) {
+              const params = model.getParams(processNoise, 0.5, w, x0)
+              const initial = getInitialState(params.order)
+              const kf = new KalmanFilter1D(params, initial)
+              const { estimates: est } = kf.steps(fullMeasurements)
+              estimates = est
+            }
+
+            // send payload to main for export (main will use provided measurements/estimates)
             window.api.measurements.export({
               sensorId: props.sensor.id,
               timeRange: props.timeRange,
+              measurements: fullMeasurements,
+              estimates,
             })
           }}
         >
