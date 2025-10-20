@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined'
 import ExpandRoundedIcon from '@mui/icons-material/ExpandRounded'
 import ScatterPlotRoundedIcon from '@mui/icons-material/ScatterPlotRounded'
@@ -46,6 +48,7 @@ interface ChartProps {
 }
 
 export function Chart(props: ChartProps) {
+  const [measurementNoise] = useState<number>(0.01) // TODO: incluir esta propriedade no Sensor (variance/stdDev da medida)
   const chartControls = useChartControls()
   const { measurements } = useSensorMeasurements(
     props.sensor.id,
@@ -64,7 +67,7 @@ export function Chart(props: ChartProps) {
     setW,
     x0,
     setX0,
-  } = useEstimates(measurements, props.sensor, 0.5)
+  } = useEstimates(measurements, props.sensor, measurementNoise)
 
   return (
     <div
@@ -161,7 +164,12 @@ export function Chart(props: ChartProps) {
               // generate estimates locally if model is selected
               let estimates: any[] | undefined
               if (model) {
-                const params = model.getParams(processNoise, 0.5, w, x0)
+                const params = model.getParams(
+                  processNoise,
+                  measurementNoise,
+                  w,
+                  x0,
+                )
                 const initial = getInitialState(params.order)
                 const kf = new KalmanFilter1D(params, initial)
                 const { estimates: est } = kf.steps(fullMeasurements)
@@ -182,7 +190,7 @@ export function Chart(props: ChartProps) {
           </Button>
 
           <div className="mr-4 flex items-center">
-            <FormControl size="small" className="w-44 text-sm">
+            <FormControl size="small" className="w-48 text-sm">
               <InputLabel id={`model-select-label-${props.sensor.id}`}>
                 Filtro
               </InputLabel>
