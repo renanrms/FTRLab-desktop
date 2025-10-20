@@ -8,7 +8,22 @@ Incorpora funcionamento plug-and-play, interface intuitiva, dispositivos flexív
 
 ![FTRLab-capture](https://github.com/renanrms/FTRLab-desktop/assets/34728048/11425ec6-2210-4ce6-9c62-a331a063d33c)
 
+## Como usar?
+
+Para obter um executável verifique a seção de [releases](/releases) e procure o mais adequado ao seu sistema operacional.
+
+Será necessário um dispositivo FTRLab para utilizar o software. Para isso veja as informações da [biblioteca FTRLab](https://github.com/renanrms/FTR-Lab-Embarcado) para instalar um exemplo em um microcontrolador.
+
 ## Desenvolvimento
+
+### Como executar?
+
+Para executar a partir do código-fonte verifique os scripts disponíveis no [package.json](/package.json). Em geral será necessário instalar `node`, `npm` e `yarn`. Depois executar os comandos:
+
+```shell
+yarn install
+yarn dev
+```
 
 ### Atualização
 
