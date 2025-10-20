@@ -257,7 +257,7 @@ export function Chart(props: ChartProps) {
 
             {model.name === 'reparatory' && (
               <>
-                <div className="w-32 mr-4">
+                <div className="w-40 mr-4">
                   <Typography variant="caption">w: {w}</Typography>
                   <Slider
                     value={w}
@@ -272,13 +272,13 @@ export function Chart(props: ChartProps) {
                   />
                 </div>
 
-                <div className="w-32 mr-4">
+                <div className="w-40 mr-4">
                   <Typography variant="caption">x0: {x0}</Typography>
                   <Slider
                     value={x0}
                     min={0}
-                    max={100}
-                    step={0.1}
+                    max={1.2}
+                    step={0.01}
                     onChange={(_, v) => {
                       setX0(v as number)
                       clearEstimates()
