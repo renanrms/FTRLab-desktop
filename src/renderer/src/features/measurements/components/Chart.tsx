@@ -248,12 +248,12 @@ export function Chart(props: ChartProps) {
 
         {model && (
           <div className="flex items-center">
-            <div className="w-40 mr-4">
-              <Typography variant="caption">Q: {processNoise}</Typography>
+            <div className="w-40 mr-4 mt-1">
+              <Typography variant="body2">q = {processNoise}</Typography>
               <Slider
                 value={processNoise}
                 min={0}
-                max={30}
+                max={50}
                 step={0.1}
                 onChange={(_, v) => {
                   setProcessNoise(v as number)
@@ -266,11 +266,11 @@ export function Chart(props: ChartProps) {
             {model.name === 'reparatory' && (
               <>
                 <div className="w-40 mr-4">
-                  <Typography variant="caption">w: {w}</Typography>
+                  <Typography variant="body2">w = {w}</Typography>
                   <Slider
                     value={w}
                     min={0}
-                    max={20}
+                    max={40}
                     step={0.1}
                     onChange={(_, v) => {
                       setW(v as number)
@@ -281,7 +281,7 @@ export function Chart(props: ChartProps) {
                 </div>
 
                 <div className="w-40 mr-4">
-                  <Typography variant="caption">x0: {x0}</Typography>
+                  <Typography variant="body2">x0 = {x0}</Typography>
                   <Slider
                     value={x0}
                     min={0}
