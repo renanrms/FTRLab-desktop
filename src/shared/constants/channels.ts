@@ -1,3 +1,5 @@
+import { SensorId } from '@shared/types/Device'
+
 export const CHANNELS = {
   APP: {
     GET_INFO: 'app:get-info',
@@ -14,9 +16,9 @@ export const CHANNELS = {
     UPDATE_SETTINGS: 'devices:update-settings',
   },
   MEASUREMENTS: {
-    UPDATE: 'measurements:update',
-    GET_ALL: 'measurements:get-all',
+    NOTIFY: (sensorId: SensorId) => `measurements:notify:${sensorId}`,
     FIND_LAST_BY_DEVICE: 'measurements:find-last-by-device',
+    GET_RANGE: 'measurements:get-range',
     DELETE_ALL: 'measurements:delete-all',
     EXPORT: 'measurements:export',
   },

@@ -6,7 +6,7 @@ import { startTime } from '@main/constants/startTime'
 import { DeviceModel, MeasurementModel } from '@main/database/models'
 import { findAllDevices } from '@main/database/queries/findAllDevices'
 import { sendDevicesInfoUpdate } from '@main/ipc/services/sendDevicesInfoUpdate'
-import { sendMeasurementUpdate } from '@main/ipc/services/sendDevicesMeasurementUpdate'
+import { sendMeasurementNotify } from '@main/ipc/services/sendDevicesMeasurementNotify'
 import { ConnectionData } from '@shared/types/ConnectionData'
 import { Device } from '@shared/types/Device'
 import { DeviceMeasurement } from '@shared/types/Measurement'
@@ -111,13 +111,27 @@ export class DevicesController {
           value,
         }))
 
-        sendMeasurementUpdate({
-          measurements: records,
-          deviceId,
-        })
-
         // Insere os dados no banco de forma síncrona para garantir que fiquem em ordem.
         await MeasurementModel.bulkCreate(records)
+
+        // Agrupa por sensorId e notifica o renderer para cada sensor separadamente.
+        const bySensor: { [sensorId: string]: any[] } = {}
+        for (const r of records) {
+          bySensor[r.sensorId] = bySensor[r.sensorId] || []
+          bySensor[r.sensorId].push(r)
+        }
+
+        // Notifica por sensor
+        for (const [sensorId, sensorMeasurements] of Object.entries(bySensor)) {
+          try {
+            sendMeasurementNotify({
+              sensorId,
+              measurements: sensorMeasurements,
+            })
+          } catch (err) {
+            console.error('Failed to send measurement notify', err)
+          }
+        }
       }
     } catch (error) {
       console.log(error)

@@ -23,16 +23,22 @@ export function useChartControls() {
   }
 
   const [showExpandedY, setShowExpandedY] = useState(false)
-  const [ShowFromOriginY, setShowFromOriginY] = useState(true)
+  const [showFromOriginY, setShowFromOriginY] = useState(true)
 
   const showExpandedYHandleClick = () => {
     setShowExpandedY(!showExpandedY)
-    setShowFromOriginY(!ShowFromOriginY)
+    setShowFromOriginY(!showFromOriginY)
   }
 
-  const ShowFromOriginYHandleClick = () => {
-    setShowFromOriginY(!ShowFromOriginY)
+  const showFromOriginYHandleClick = () => {
+    setShowFromOriginY(!showFromOriginY)
     setShowExpandedY(!showExpandedY)
+  }
+
+  const [showDerivate, setShowDerivate] = useState(false)
+
+  const showDerivateHandleClick = () => {
+    setShowDerivate(!showDerivate)
   }
 
   return {
@@ -41,8 +47,10 @@ export function useChartControls() {
     showPointsHandleClick,
     showLinesHandleClick,
     showExpandedY,
-    ShowFromOriginY,
+    showFromOriginY,
     showExpandedYHandleClick,
-    ShowFromOriginYHandleClick,
+    showFromOriginYHandleClick,
+    showDerivate,
+    showDerivateHandleClick,
   }
 }

@@ -16,6 +16,21 @@ export interface MeasurementUpdateMessage {
   deviceId: string
 }
 
+export interface MeasurementNotifyMessage {
+  sensorId: string
+  measurements: Measurement[]
+}
+
+export interface GetMeasurementsRangeRequest {
+  sensorId: string
+  start?: number
+  end?: number
+}
+
+export interface GetMeasurementsRangeResponse {
+  measurements: Measurement[]
+}
+
 // Comunicação partindo do processo Renderer
 
 export interface GetAppInfoResponse {
@@ -34,10 +49,6 @@ export interface CloseDeviceConnectionRequest {
   deviceId: string
 }
 
-export interface GetAllMeasurementsResponse {
-  measurements: Measurement[]
-}
-
 export interface FindAllMeasurementsByDeviceResponse {
   measurementsBySensor: MeasurementsBySensor
 }
@@ -52,4 +63,8 @@ export interface UpdateDeviceSettingsRequest {
 export interface ExportMeasurementsRequest {
   sensorId: SensorId
   timeRange: number
+  // optional full data payload: if provided, main process will use these
+  // measurements and estimates instead of querying the DB.
+  measurements?: Measurement[]
+  estimates?: Measurement[]
 }

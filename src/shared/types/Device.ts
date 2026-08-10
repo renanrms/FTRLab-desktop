@@ -6,6 +6,7 @@ export interface Sensor {
   quantity: string
   method: string
   deviceId: string
+  hasMeasurement?: boolean
 }
 
 export interface Device {

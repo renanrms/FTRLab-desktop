@@ -1,6 +1,7 @@
 import { IpcRendererEvent, ipcRenderer } from 'electron'
 
 import { CHANNELS } from '@shared/constants/channels'
+import { SensorId } from '@shared/types/Device'
 import {
   CloseDeviceConnectionRequest,
   DevicesInfoUpdateMessage,
@@ -8,9 +9,10 @@ import {
   FindAllMeasurementsByDeviceRequest,
   FindAllMeasurementsByDeviceResponse,
   GetAllDevicesResponse,
-  GetAllMeasurementsResponse,
   GetAppInfoResponse,
-  MeasurementUpdateMessage,
+  MeasurementNotifyMessage,
+  GetMeasurementsRangeRequest,
+  GetMeasurementsRangeResponse,
   OpenDeviceConnectionRequest,
   UpdateDeviceSettingsRequest,
 } from '@shared/types/ipc'
@@ -53,10 +55,6 @@ export const api = {
     },
   },
   measurements: {
-    async getAll(request: void): Promise<GetAllMeasurementsResponse> {
-      return await ipcRenderer.invoke(CHANNELS.MEASUREMENTS.GET_ALL, request)
-    },
-
     async findLastByDevice(
       request: FindAllMeasurementsByDeviceRequest,
     ): Promise<FindAllMeasurementsByDeviceResponse> {
@@ -64,6 +62,12 @@ export const api = {
         CHANNELS.MEASUREMENTS.FIND_LAST_BY_DEVICE,
         request,
       )
+    },
+
+    async getRange(
+      request: GetMeasurementsRangeRequest,
+    ): Promise<GetMeasurementsRangeResponse> {
+      return await ipcRenderer.invoke(CHANNELS.MEASUREMENTS.GET_RANGE, request)
     },
 
     async deleteAll(request: void): Promise<void> {
@@ -74,16 +78,20 @@ export const api = {
       return await ipcRenderer.invoke(CHANNELS.MEASUREMENTS.EXPORT, request)
     },
 
-    onUpdate(
+    onNotify(
+      sensorId: SensorId,
       callback: (
         event: IpcRendererEvent,
-        params: MeasurementUpdateMessage,
+        params: MeasurementNotifyMessage,
       ) => void,
     ) {
-      ipcRenderer.on(CHANNELS.MEASUREMENTS.UPDATE, callback)
+      ipcRenderer.on(CHANNELS.MEASUREMENTS.NOTIFY(sensorId), callback)
 
       return () => {
-        ipcRenderer.removeListener(CHANNELS.MEASUREMENTS.UPDATE, callback)
+        ipcRenderer.removeListener(
+          CHANNELS.MEASUREMENTS.NOTIFY(sensorId),
+          callback,
+        )
       }
     },
   },

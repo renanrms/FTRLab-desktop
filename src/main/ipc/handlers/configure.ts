@@ -18,9 +18,10 @@ import {
   FindAllMeasurementsByDeviceRequest,
   FindAllMeasurementsByDeviceResponse,
   GetAllDevicesResponse,
-  GetAllMeasurementsResponse,
   GetAppInfoResponse,
   OpenDeviceConnectionRequest,
+  GetMeasurementsRangeRequest,
+  GetMeasurementsRangeResponse,
 } from '@shared/types/ipc'
 import { Measurement } from '@shared/types/Measurement'
 
@@ -76,19 +77,6 @@ export function configureIpcHandlers(devicesController: DevicesController) {
   )
 
   ipcMain.handle(
-    CHANNELS.MEASUREMENTS.GET_ALL,
-    async (event, request: void): Promise<GetAllMeasurementsResponse> => {
-      console.log(`<= ${CHANNELS.MEASUREMENTS.GET_ALL}`)
-      const measurements = (await MeasurementModel.findAll()).map(
-        (model) => model.dataValues,
-      )
-      return {
-        measurements,
-      }
-    },
-  )
-
-  ipcMain.handle(
     CHANNELS.MEASUREMENTS.FIND_LAST_BY_DEVICE,
     async (
       event,
@@ -139,6 +127,44 @@ export function configureIpcHandlers(devicesController: DevicesController) {
   )
 
   ipcMain.handle(
+    CHANNELS.MEASUREMENTS.GET_RANGE,
+    async (
+      event,
+      request: GetMeasurementsRangeRequest,
+    ): Promise<GetMeasurementsRangeResponse> => {
+      console.log(
+        `<= ${CHANNELS.MEASUREMENTS.GET_RANGE} \n${JSON.stringify(request)}`,
+      )
+
+      const where: any = {
+        sensorId: request.sensorId,
+      }
+
+      if (
+        typeof request.start === 'number' ||
+        typeof request.end === 'number'
+      ) {
+        where.timestamp = {}
+        if (typeof request.start === 'number') {
+          where.timestamp[Op.gte] = request.start
+        }
+        if (typeof request.end === 'number') {
+          where.timestamp[Op.lte] = request.end
+        }
+      }
+
+      const measurements: Measurement[] = (
+        await MeasurementModel.findAll({
+          where,
+          order: [['timestamp', 'ASC']],
+        })
+      ).map((m) => transformToRelativeTime(m.dataValues))
+
+      return { measurements }
+    },
+  )
+
+  ipcMain.handle(
     CHANNELS.MEASUREMENTS.DELETE_ALL,
     async (event, request: void): Promise<void> => {
       console.log(`<= ${CHANNELS.MEASUREMENTS.DELETE_ALL}`)
@@ -157,18 +183,21 @@ export function configureIpcHandlers(devicesController: DevicesController) {
       console.log(
         `<= ${CHANNELS.MEASUREMENTS.EXPORT}\n${JSON.stringify(request)}`,
       )
-
       const sensor: Sensor = (await SensorModel.findByPk(request.sensorId))
         ?.dataValues
 
-      const maxTimestamp: number = await MeasurementModel.max('timestamp', {
-        where: {
-          sensorId: sensor.id,
-        },
-      })
-
-      const measurements: Measurement[] = (
-        await MeasurementModel.findAll({
+      // If the renderer passed a full payload, use it. Otherwise fetch from DB
+      // as before.
+      let measurements: Measurement[]
+      if (request.measurements) {
+        measurements = request.measurements
+      } else {
+        const maxTimestampVal: any = await MeasurementModel.max('timestamp', {
+          where: { sensorId: sensor.id },
+        })
+        const maxTimestamp =
+          typeof maxTimestampVal === 'number' ? maxTimestampVal : 0
+        const rows = await MeasurementModel.findAll({
           where: {
             sensorId: sensor.id,
             timestamp: {
@@ -177,11 +206,13 @@ export function configureIpcHandlers(devicesController: DevicesController) {
           },
           order: [['timestamp', 'ASC']],
         })
-      ).map((measurementM, index, array) => ({
-        ...measurementM.dataValues,
-        timestamp:
-          measurementM.dataValues.timestamp - array[0].dataValues.timestamp,
-      }))
+
+        measurements = rows.map((measurementM, index, array) => ({
+          ...measurementM.dataValues,
+          timestamp:
+            measurementM.dataValues.timestamp - array[0].dataValues.timestamp,
+        }))
+      }
 
       dialog
         .showSaveDialog(getMainWindow(), {
@@ -204,28 +235,58 @@ export function configureIpcHandlers(devicesController: DevicesController) {
 
             const extension = result.filePath.split('.').at(-1)
 
+            const useEstimates =
+              Array.isArray(request.estimates) &&
+              request.estimates.length === measurements.length
+
             if (extension === 'csv') {
-              fileHeader = `t, ${sensor.quantity}`
-
-              fileBody = measurements
-                .map(
-                  (measurement) =>
-                    `${measurement.timestamp.toFixed(6)}, ${measurement.value}`,
-                )
-                .join('\n')
+              if (useEstimates) {
+                fileHeader = `t, ${sensor.quantity}, estimate`
+                const rows: string[] = []
+                for (let i = 0; i < measurements.length; i++) {
+                  const m = measurements[i]
+                  const e = request.estimates![i]
+                  rows.push(`${m.timestamp.toFixed(6)}, ${m.value}, ${e.value}`)
+                }
+                fileBody = rows.join('\n')
+              } else {
+                fileHeader = `t, ${sensor.quantity}`
+                const rows: string[] = []
+                for (const m of measurements) {
+                  rows.push(`${m.timestamp.toFixed(6)}, ${m.value}`)
+                }
+                fileBody = rows.join('\n')
+              }
             } else {
-              fileHeader = `t\t${sensor.quantity}`
-
-              fileBody = measurements
-                .map(
-                  (measurement) =>
-                    `${measurement.timestamp.toFixed(6).replace('.', ',')}\t${(
-                      measurement.value as number
+              if (useEstimates) {
+                fileHeader = `t\t${sensor.quantity}\testimate`
+                const rows: string[] = []
+                for (let i = 0; i < measurements.length; i++) {
+                  const m = measurements[i]
+                  const e = request.estimates![i]
+                  rows.push(
+                    `${m.timestamp.toFixed(6).replace('.', ',')}\t${(
+                      m.value as number
+                    )
+                      .toString()
+                      .replace('.', ',')}\t${e.value}`,
+                  )
+                }
+                fileBody = rows.join('\n')
+              } else {
+                fileHeader = `t\t${sensor.quantity}`
+                const rows: string[] = []
+                for (const m of measurements) {
+                  rows.push(
+                    `${m.timestamp.toFixed(6).replace('.', ',')}\t${(
+                      m.value as number
                     )
                       .toString()
                       .replace('.', ',')}`,
-                )
-                .join('\n')
+                  )
+                }
+                fileBody = rows.join('\n')
+              }
             }
 
             const fileContent = [fileHeader, fileBody].join('\n')

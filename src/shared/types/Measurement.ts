@@ -12,4 +12,9 @@ export interface Measurement {
   value: any
 }
 
+export interface Measure {
+  timestamp: number
+  value: any
+}
+
 export type MeasurementsBySensor = Record<SensorId, Measurement[] | undefined>

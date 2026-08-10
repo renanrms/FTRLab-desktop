@@ -19,13 +19,14 @@ export function ControlCard(props: ControlCardProps) {
         step={0.025}
         min={1}
         max={Math.log2(24 * 60 * 60)}
-        valueLabelFormat={(value) => `${value} s`}
-        valueLabelDisplay="auto"
+        // valueLabelFormat={(value) => `${value} s`}
+        // valueLabelDisplay="auto"
         scale={(value) => Math.floor(2 ** value)}
         value={Math.log2(props.timeRange)}
         onChange={(event, value) => {
           props.setTimeRange(2 ** (value as number))
         }}
+        size="small"
       />
     </div>
   )
